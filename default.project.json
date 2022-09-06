@@ -15,6 +15,12 @@
           "$path": "Client"
         }
       }
+    },
+    
+    "ReplicatedStorage": {
+      "Shared": {
+        "$path": "Shared"
+      }
     }
   }
 }

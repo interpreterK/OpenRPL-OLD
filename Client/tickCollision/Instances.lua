@@ -1,13 +1,6 @@
-local New = function(Inst, Parent, Props)
-	local i = Instance.new(Inst)
-	for prop, val in next, Props or {} do
-		pcall(function()
-			i[prop] = val
-		end)
-	end
-	i.Parent = Parent
-	return i
-end
+local Common = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Common"))
+local New = Common.New
+
 Mover = New('Part', workspace, {
     Name = "Mover",
     Size = Vector3.new(2,2,1),

@@ -1,36 +1,20 @@
-local S = setmetatable({}, {
-	__index = function(self,i)
-		if not rawget(self,i) then
-			self[i] = game:GetService(i)
-		end
-		return rawget(self,i)
-	end
-})
+local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local Common, Instances = require(Shared:WaitForChild("Common")), require(script:WaitForChild("Instances"))
+local S, thread, WFC = Common.S, Common.thread, Common.WFC
 
 local Players = S.Players
 local UIS = S.UserInputService
 local RS = S.RunService
-local SG = S.StarterGui
+local Storage = S.ReplicatedStorage
 local LocalPlayer = Players.LocalPlayer or Players.PlayerAdded:Wait()
-SG:SetCoreGuiEnabled(Enum.CoreGuiType.All, false)
 
-local Instances = require(script:WaitForChild("Instances"))
 local Mover, FC, Pointer, LookX, LookY, LookZ = Instances.Mover, Instances.FC, Instances.Pointer, Instances.LookX, Instances.LookY, Instances.LookZ
-
 local V3, CN, ANG, lookAt = Vector3.new, CFrame.new, CFrame.Angles, CFrame.lookAt
 local CN_zero, CN_one, V3_zero, V3_one = CN(0,0,0), CN(1,1,1), Vector3.zero, Vector3.one
 local pi = math.pi
 local insert, find, remove = table.insert, table.find, table.remove
-local resume, create = coroutine.resume, coroutine.create
 
 local cc = workspace.CurrentCamera
-
-local function thread(f)
-	local b,e = resume(create(f))
-	if not b then
-		warn(e,'trace=\n',debug.traceback())
-	end
-end
 
 --Remove the default character
 local function set_CameraPOV(BasePart)
@@ -46,34 +30,15 @@ set_CameraPOV(Mover)
 FC.Parent = cc
 
 --Init the workspace physics
-local objs = workspace:GetDescendants()
-local baseparts = {}
-for i = 1, #objs do
-	if objs[i]:IsA("BasePart") then
-		insert(baseparts, objs[i])
-	end
-end
-workspace.DescendantAdded:Connect(function(descendant)
-	if descendant:IsA("BasePart") then
-		insert(baseparts, descendant)
-	end
-end)
-workspace.DescendantRemoving:Connect(function(descendant)
-	if descendant:IsA("BasePart") then
-		local f = find(baseparts, descendant)
-		if f then
-			remove(baseparts, f)
-		end
-	end
-end)
+local PhysicsList = {}
+local PhysicsList_Remote = WFC(Shared, 'PhysicsList', 10, "Fetching PhysicsList Remote...", "Got the PhysicsList Remote.", "Failed to fetch the PhysicsList, The physics engine will not work!")
 
 --Controls
 local Hold, Down, Up = {}, {}, {}
 local MouseHit_p = V3_zero
-local hit_Dist = 100
 local Freecam = false
 local GroundPhysics = false
-function Down.e()
+function Down.f()
 	Freecam = not Freecam
 	if Freecam then
 		set_CameraPOV(FC)
@@ -187,10 +152,8 @@ function Corners.Top_BackRight(BasePart)
 	return (t+t.RightVector*BasePart.Size.x/2).p
 end
 function Corners.Top_BackLeft(BasePart)
-	local cf, size = BasePart.CFrame, BasePart.Size
-	local backFace = (cf-cf.LookVector*size.z/2)
-	local topFrontEdge = backFace+backFace.UpVector*size.y/2
-	return (topFrontEdge-topFrontEdge.RightVector*size.x/2).p
+	local t = backFace(BasePart.CFrame, BasePart.Size)
+	return (t-t.RightVector*BasePart.Size.x/2).p
 end
 
 local ys = 1
@@ -198,7 +161,14 @@ local function m_2D_3DVector() --This is NOT suppose to be mouse.Target or react
 	local SPTR = cc:ScreenPointToRay(MouseHit_p.x, MouseHit_p.y, 0)
 	return (SPTR.Origin+Mover.CFrame.LookVector+SPTR.Direction*(cc.CFrame.p-Mover.CFrame.p).Magnitude*2)
 end
+
+--Step info
+--https://devforum-uploads.s3.dualstack.us-east-2.amazonaws.com/uploads/original/4X/0/b/6/0b6fde38a15dd528063a92ac8916ce3cd84fc1ce.png
 RS.Heartbeat:Connect(function()
+	thread(function()
+		--Grab the physics info after a physics step
+		PhysicsList = PhysicsList_Remote:InvokeServer()
+	end)
 	local z = Vector3.zAxis/10
 	local lv, m_lv = cc.CFrame.LookVector, Mover.CFrame.LookVector
 	local rv = cc.CFrame.RightVector
@@ -234,14 +204,14 @@ RS.Heartbeat:Connect(function()
 			FC.Position+=rv+z
 		end
 	end
-	if Hold.leftshift then
+	if Hold.e then
 		if not Freecam then
 			Mover.Position+=V3(0,ys,0)
 		else
 			FC.Position+=V3(0,ys,0)
 		end
 	end
-	if Hold.leftcontrol then
+	if Hold.q then
 		if not Freecam then
 			Mover.Position-=V3(0,ys,0)
 		else
@@ -274,11 +244,13 @@ RS.Heartbeat:Connect(function()
 end)
 RS.RenderStepped:Connect(function()
 	--figure out a formula to get all sides (baseparts)
-	for i = 1, #baseparts do
-		local obj = baseparts[i]
+	for i = 1, #PhysicsList do
+		local obj = PhysicsList[i]
 		local floor = (obj.CFrame*CN(0,Mover.Size.y/2,0)).p
 		local moverB = (Mover.CFrame*CN(0,Mover.Size.y/2,0)).p
 		local unit = (floor-moverB).Unit
+
+
 
 		--print(obj.Name,"=",unit)
 	end
