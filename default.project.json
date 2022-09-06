@@ -1,0 +1,20 @@
+{
+  "name": "PhysicsEngine",
+  "tree": {
+    "$className": "DataModel",
+
+    "ServerScriptService": {
+      "Server": {
+        "$path": "Server"
+      }
+    },
+
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "Client": {
+          "$path": "Client"
+        }
+      }
+    }
+  }
+}
