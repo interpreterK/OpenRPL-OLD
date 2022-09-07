@@ -1,6 +1,6 @@
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Common, Instances = require(Shared:WaitForChild("Common")), require(script:WaitForChild("Instances"))
-local S, thread, WFC = Common.S, Common.thread, Common.WFC
+local S, thread, WFC, New = Common.S, Common.thread, Common.WFC, Common.New
 
 local Players = S.Players
 local UIS = S.UserInputService
@@ -11,7 +11,7 @@ local LocalPlayer = Players.LocalPlayer or Players.PlayerAdded:Wait()
 local Mover, FC, Pointer, LookX, LookY, LookZ = Instances.Mover, Instances.FC, Instances.Pointer, Instances.LookX, Instances.LookY, Instances.LookZ
 local V3, CN, ANG, lookAt = Vector3.new, CFrame.new, CFrame.Angles, CFrame.lookAt
 local CN_zero, CN_one, V3_zero, V3_one = CN(0,0,0), CN(1,1,1), Vector3.zero, Vector3.one
-local pi = math.pi
+local pi, floor = math.pi, math.floor
 local insert, find, remove = table.insert, table.find, table.remove
 
 local cc = workspace.CurrentCamera
@@ -156,7 +156,6 @@ function Corners.Top_BackLeft(BasePart)
 	return (t-t.RightVector*BasePart.Size.x/2).p
 end
 
-local ys = 1
 local function m_2D_3DVector() --This is NOT suppose to be mouse.Target or react's to physics *yet* -09/04
 	local SPTR = cc:ScreenPointToRay(MouseHit_p.x, MouseHit_p.y, 0)
 	return (SPTR.Origin+Mover.CFrame.LookVector+SPTR.Direction*(cc.CFrame.p-Mover.CFrame.p).Magnitude*2)
@@ -164,11 +163,20 @@ end
 
 --Step info
 --https://devforum-uploads.s3.dualstack.us-east-2.amazonaws.com/uploads/original/4X/0/b/6/0b6fde38a15dd528063a92ac8916ce3cd84fc1ce.png
-RS.Heartbeat:Connect(function()
-	thread(function()
-		--Grab the physics info after a physics step
-		PhysicsList = PhysicsList_Remote:InvokeServer()
-	end)
+local pre_tick_Step = New('BindableEvent')
+
+local Hz = 60
+local pdt = 0
+local ys = 1
+RS.Heartbeat:Connect(function(dt)
+	pdt+=dt
+	if pdt>1/Hz then
+		pre_tick_Step:Fire(dt)
+		pdt=0
+	end
+end)
+
+pre_tick_Step.Event:Connect(function(_)
 	local z = Vector3.zAxis/10
 	local lv, m_lv = cc.CFrame.LookVector, Mover.CFrame.LookVector
 	local rv = cc.CFrame.RightVector
@@ -243,6 +251,10 @@ RS.Heartbeat:Connect(function()
 	LookZ.CFrame=(Sides.Front(LookZ))*ANG(pi/2,0,0)
 end)
 RS.RenderStepped:Connect(function()
+	thread(function()
+		--Grab the physics info after a physics step
+		PhysicsList = PhysicsList_Remote:InvokeServer()
+	end)
 	--figure out a formula to get all sides (baseparts)
 	for i = 1, #PhysicsList do
 		local obj = PhysicsList[i]
