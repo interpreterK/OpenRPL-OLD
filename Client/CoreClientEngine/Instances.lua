@@ -1,4 +1,5 @@
-local Common = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Common"))
+local Modules = _G.__phys_modules__
+local Common = Modules.Common
 local New = Common.New
 
 Mover = New('Part', workspace, {

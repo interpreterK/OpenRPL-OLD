@@ -44,6 +44,7 @@ Vars.Remove = function(Inst)
 	end)
 end
 
+--Use for important instances and locations
 Vars.WFC = function(Parent, Name, Timeout, pt_MSG, gp_MSG, nil_MSG)
 	if pt_MSG then
 		print(pt_MSG)
@@ -63,7 +64,5 @@ function Vars.write(array)
 		Vars[i] = v
 	end
 end
-
-
 
 return Vars

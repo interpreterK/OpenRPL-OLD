@@ -1,18 +1,30 @@
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
-local Common, Instances = require(Shared:WaitForChild("Common")), require(script:WaitForChild("Instances"))
-local S, thread, WFC, New = Common.S, Common.thread, Common.WFC, Common.New
+local Modules = {
+	Common = require(Shared:WaitForChild("Common"))
+}
 
+_G.__phys_modules__ = setmetatable(Modules, {
+	__index = function(self,i)
+		local fenv = getfenv(2)
+		if fenv.script and fenv.script:IsDescendantOf(script) then
+			return rawget(self,i)
+		end
+	end,
+	__metatable = nil
+})
+Modules.Instances = require(script:WaitForChild("Instances"))
+Modules.tickHz = require(script:WaitForChild("tickHz"))
+
+local S, thread, WFC = Modules.Common.S, Modules.Common.thread, Modules.Common.WFC
 local Players = S.Players
 local UIS = S.UserInputService
 local RS = S.RunService
-local Storage = S.ReplicatedStorage
 local LocalPlayer = Players.LocalPlayer or Players.PlayerAdded:Wait()
 
-local Mover, FC, Pointer, LookX, LookY, LookZ = Instances.Mover, Instances.FC, Instances.Pointer, Instances.LookX, Instances.LookY, Instances.LookZ
+local Mover, FC, Pointer, LookX, LookY, LookZ = Modules.Instances.Mover, Modules.Instances.FC, Modules.Instances.Pointer, Modules.Instances.LookX, Modules.Instances.LookY, Modules.Instances.LookZ
 local V3, CN, ANG, lookAt = Vector3.new, CFrame.new, CFrame.Angles, CFrame.lookAt
 local CN_zero, CN_one, V3_zero, V3_one = CN(0,0,0), CN(1,1,1), Vector3.zero, Vector3.one
-local pi, floor = math.pi, math.floor
-local insert, find, remove = table.insert, table.find, table.remove
+local pi = math.pi
 
 local cc = workspace.CurrentCamera
 
@@ -21,10 +33,7 @@ local function set_CameraPOV(BasePart)
 	cc.CameraSubject = BasePart
 	cc.CameraType = Enum.CameraType.Custom
 end
-local char = LocalPlayer.Character
-while not char do
-	char = LocalPlayer.CharacterAdded:Wait()
-end
+local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
 char:Destroy()
 set_CameraPOV(Mover)
 FC.Parent = cc
@@ -163,21 +172,12 @@ end
 
 --Step info
 --https://devforum-uploads.s3.dualstack.us-east-2.amazonaws.com/uploads/original/4X/0/b/6/0b6fde38a15dd528063a92ac8916ce3cd84fc1ce.png
-local pre_tick_Step = New('BindableEvent')
+local tickStepped = Modules.tickHz.new(60)
 
-local Hz = 60
-local pdt = 0
+local z = Vector3.zAxis/10
 local ys = 1
-RS.Heartbeat:Connect(function(dt)
-	pdt+=dt
-	if pdt>1/Hz then
-		pre_tick_Step:Fire(dt)
-		pdt=0
-	end
-end)
 
-pre_tick_Step.Event:Connect(function(_)
-	local z = Vector3.zAxis/10
+tickStepped.OnNewTick:Connect(function(_)
 	local lv, m_lv = cc.CFrame.LookVector, Mover.CFrame.LookVector
 	local rv = cc.CFrame.RightVector
 	if Hold.w then
@@ -250,6 +250,16 @@ pre_tick_Step.Event:Connect(function(_)
 	LookY.CFrame=(Sides.Top(LookY))*ANG(0,pi/2,0)
 	LookZ.CFrame=(Sides.Front(LookZ))*ANG(pi/2,0,0)
 end)
+
+local function ComputePhysic(Obj)
+	local Top = Sides.Top(Obj):Inverse()
+	local Bottom = Sides.Bottom(Obj)
+	local Unit = (Top.p-Bottom.p)+Mover.Position
+	if Unit.Unit > Obj.Size then
+		warn("no clippinggg")
+	end
+end
+
 RS.RenderStepped:Connect(function()
 	thread(function()
 		--Grab the physics info after a physics step
@@ -257,13 +267,6 @@ RS.RenderStepped:Connect(function()
 	end)
 	--figure out a formula to get all sides (baseparts)
 	for i = 1, #PhysicsList do
-		local obj = PhysicsList[i]
-		local floor = (obj.CFrame*CN(0,Mover.Size.y/2,0)).p
-		local moverB = (Mover.CFrame*CN(0,Mover.Size.y/2,0)).p
-		local unit = (floor-moverB).Unit
-
-
-
-		--print(obj.Name,"=",unit)
+		ComputePhysic(PhysicsList[i])
 	end
 end)
