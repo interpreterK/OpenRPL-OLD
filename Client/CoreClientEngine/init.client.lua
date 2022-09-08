@@ -46,25 +46,22 @@ FC.Parent = cc
 --Init the workspace physics
 local PhysicsList = {}
 local PhysicsList_Remote = WFC(Shared, 'PhysicsList', 10, "Fetching PhysicsList Remote...", "Got the PhysicsList Remote.", "Failed to fetch the PhysicsList, The physics engine will not work!")
-local HitColliders = {}
+local HitColliders = {
+	x={},y={},z={},
+	neg_x={},neg_y={},neg_z={}
+}
 
-local function HitCollisions()
-	if next(HitColliders) then
-		for i = 1, #PhysicsList do
-			HitColliders[PhysicsList[i]]:Destroy()
-			HitColliders[PhysicsList[i]] = nil
-		end
-	end
-	for i = 1, #PhysicsList do
-		HitColliders[PhysicsList[i]] = New('Part', workspace, {
-			Name='physics hit',
-			Anchored=true,
-			Size=V3(2,.1,2),
-			Color=Color3.new(1,1,0),
-			Transparency=.5,
-			Position=PhysicsList[i].CFrame*CN(0,PhysicsList[i].Size.y/2,0).p
-		})
-	end
+local function Visual_HitCollisions(Type, Obj, Color, Side, Ang)
+	HitColliders[Type][Obj] = New('Part', workspace, {
+		Name='physics hit',
+		Anchored=true,
+		Size=V3(2,.1,2),
+		Color=Color,
+		Transparency=.5,
+		Position=Obj.CFrame*Side,
+		CFrame=Ang or CN_zero
+	})
+	--CN(0,PhysicsList[i].Size.y/2,0).p
 end
 
 --Controls
@@ -259,26 +256,129 @@ Heartbeat.TickStep:Connect(function(_)
 end)
 
 local function Hit_Detection_Top(Obj)
-	local Top = Obj.CFrame*CN(0,Obj.Size.y/2,0)
-	local Origin = Obj.Position
-	local pos_i = -Mover.Position
-	local point = pos_i+Top.p
-	local abs_size_X = abs(Obj.Size.x/2)
-	local abs_size_Z = abs(Obj.Size.z/2)
-	local max_sX = clamp(-abs_size_X,-point.x,abs_size_X)
-	local max_sZ = clamp(-abs_size_Z,-point.z,abs_size_Z)
-	return V3(Origin.x+max_sX,Top.p.y,Origin.z+max_sZ)
+	local Hit = V3_zero
+	pcall(function()
+		local Top = Obj.CFrame*CN(0,Obj.Size.y/2,0)
+		local Origin = Obj.Position
+		local pos_i = -Mover.Position
+		local point = pos_i+Top.p
+		local abs_size_X = abs(Obj.Size.x/2)
+		local abs_size_Z = abs(Obj.Size.z/2)
+		local max_sX = clamp(-abs_size_X,-point.x,abs_size_X)
+		local max_sZ = clamp(-abs_size_Z,-point.z,abs_size_Z)
+		Hit =  V3(Origin.x+max_sX,Top.p.y,Origin.z+max_sZ)
+	end)
+	return Hit
+end
+
+local function Hit_Detection_Bottom(Obj)
+	local Hit = V3_zero
+	pcall(function()
+		local Top = Obj.CFrame*CN(0,Obj.Size.y/-2,0)
+		local Origin = Obj.Position
+		local pos_i = -Mover.Position
+		local point = pos_i+Top.p
+		local abs_size_X = abs(Obj.Size.x/-2)
+		local abs_size_Z = abs(Obj.Size.z/-2)
+		local max_sX = clamp(-abs_size_X,-point.x,abs_size_X)
+		local max_sZ = clamp(-abs_size_Z,-point.z,abs_size_Z)
+		Hit = V3(Origin.x+max_sX,Top.p.y,Origin.z+max_sZ)
+	end)
+	return Hit
+end
+
+local function Hit_Detection_Left(Obj)
+	local Hit = V3_zero
+	pcall(function()
+		local Top = Obj.CFrame*CN(Obj.Size.x/-2,0,0)
+		local Origin = Obj.Position
+		local pos_i = -Mover.Position
+		local point = pos_i+Top.p
+		local abs_size_Y = abs(Obj.Size.y/-2)
+		local abs_size_Z = abs(Obj.Size.z/-2)
+		local max_sY = clamp(-abs_size_Y,-point.y,abs_size_Y)
+		local max_sZ = clamp(-abs_size_Z,-point.z,abs_size_Z)
+		Hit = V3(Top.p.x,Origin.y+max_sY,Origin.z+max_sZ)
+	end)
+	return Hit
+end
+
+local function Hit_Detection_Right(Obj)
+	local Hit = V3_zero
+	pcall(function()
+		local Top = Obj.CFrame*CN(Obj.Size.x/2,0,0)
+		local Origin = Obj.Position
+		local pos_i = -Mover.Position
+		local point = pos_i+Top.p
+		local abs_size_Y = abs(Obj.Size.y/2)
+		local abs_size_Z = abs(Obj.Size.z/2)
+		local max_sY = clamp(-abs_size_Y,-point.y,abs_size_Y)
+		local max_sZ = clamp(-abs_size_Z,-point.z,abs_size_Z)
+		Hit = V3(Top.p.x,Origin.y+max_sY,Origin.z+max_sZ)
+	end)
+	return Hit
+end
+
+local function Hit_Detection_Front(Obj)
+	local Hit = V3_zero
+	pcall(function()
+		local Top = Obj.CFrame*CN(0,0,Obj.Size.z/2)
+		local Origin = Obj.Position
+		local pos_i = -Mover.Position
+		local point = pos_i+Top.p
+		local abs_size_Y = abs(Obj.Size.y/2)
+		local abs_size_X = abs(Obj.Size.x/2)
+		local max_sY = clamp(-abs_size_Y,-point.y,abs_size_Y)
+		local max_sX = clamp(-abs_size_X,-point.x,abs_size_X)
+		Hit = V3(Origin.x+max_sX,Origin.y+max_sY,Top.p.z)
+	end)
+	return Hit
+end
+
+local function Hit_Detection_Back(Obj)
+	local Hit = V3_zero
+	pcall(function()
+		local Top = Obj.CFrame*CN(0,0,Obj.Size.z/-2)
+		local Origin = Obj.Position
+		local pos_i = -Mover.Position
+		local point = pos_i+Top.p
+		local abs_size_Y = abs(Obj.Size.y/-2)
+		local abs_size_X = abs(Obj.Size.x/-2)
+		local max_sY = clamp(-abs_size_Y,-point.y,abs_size_Y)
+		local max_sX = clamp(-abs_size_X,-point.x,abs_size_X)
+		Hit = V3(Origin.x+max_sX,Origin.y+max_sY,Top.p.z)
+	end)
+	return Hit
 end
 
 local function ComputePhysic(Obj)
-	pcall(function()
-
-		local y_hit = Hit_Detection_Top(Obj)
-	
-		if HitColliders[Obj] then
-			HitColliders[Obj].Position = y_hit
+	--pcall(function()
+		local y_hit_level = Hit_Detection_Top(Obj)
+		local neg_y_hit_level = Hit_Detection_Bottom(Obj)
+		local x_hit_level = Hit_Detection_Left(Obj)
+		local neg_x_hit_level = Hit_Detection_Right(Obj)
+		local z_hit_level = Hit_Detection_Front(Obj)
+		local neg_z_hit_level = Hit_Detection_Back(Obj)
+		
+		if HitColliders.neg_y[Obj] then
+			HitColliders.neg_y[Obj].Position = neg_y_hit_level
 		end
-	end)
+		if HitColliders.y[Obj] then
+			HitColliders.y[Obj].Position = y_hit_level
+		end
+		if HitColliders.x[Obj] then
+			HitColliders.x[Obj].Position = x_hit_level
+		end
+		if HitColliders.neg_x[Obj] then
+			HitColliders.neg_x[Obj].Position = neg_x_hit_level
+		end
+		if HitColliders.z[Obj] then
+			HitColliders.z[Obj].Position = z_hit_level
+		end
+		if HitColliders.neg_z[Obj] then
+			HitColliders.neg_z[Obj].Position = neg_z_hit_level
+		end
+	--end)
 end
 
 RenderStepped.TickStep:Connect(function(_)
@@ -295,5 +395,13 @@ thread(function()
 	repeat
 		task.wait()
 	until #PhysicsList ~= 0
-	HitCollisions()
+	for i = 1, #PhysicsList do
+		local Obj = PhysicsList[i]
+		Visual_HitCollisions('y',Obj,Color3.new(1,1,0),CN(0,Obj.Size.y/2,0).p)
+		Visual_HitCollisions('neg_y',Obj,Color3.new(0,0,1),CN(0,Obj.Size.y/-2,0).p)
+		Visual_HitCollisions('z',Obj,Color3.new(1,0,0),CN(Obj.Size.x/-2,0,0).p,ANG(pi/2,0,0))
+		Visual_HitCollisions('neg_z',Obj,Color3.new(0,1,0),CN(Obj.Size.x/2,0,0).p,ANG(pi/-2,0,0))
+		Visual_HitCollisions('neg_x',Obj,Color3.new(1,0,1),CN(Obj.Size.x/2,0,0).p,ANG(0,0,pi/2))
+		Visual_HitCollisions('x',Obj,Color3.new(1,0,1),CN(Obj.Size.x/2,0,0).p,ANG(0,0,pi/-2))
+	end
 end)
