@@ -10,25 +10,27 @@ local RunS = S.RunService
 local function CreateVM(FPS, Step_Func)
     local Hz_Bind = New('BindableEvent')
     local Hz, pdt = FPS or 60, 0
-    local hstep = RunS[Step_Func]:Connect(function(dt)
+    local Connection = RunS[Step_Func]:Connect(function(dt)
         pdt+=dt
-        if pdt>1/Hz then
+        if pdt>1/(Hz+4) then
             Hz_Bind:Fire(dt)
             pdt=0
         end
     end)
     return {
         Hz_Bind = Hz_Bind,
-        hstep = hstep
+        Connection = Connection
     }
 end
 
-function tickHz.new(Hz)
-    return setmetatable({Hz}, tickHz)
-end
-
-function tickHz:PreRender()
-    
+function tickHz.new(Hz, Step)
+    assert(Step, "Step instruction is required")
+    local self = {}
+    local VM = CreateVM(Hz, Step)
+    self.Hz = Hz
+    self.TickStep = VM.Hz_Bind.Event
+    self.TickConnection = VM.Connection
+    return setmetatable(self, tickHz)
 end
 
 return tickHz
