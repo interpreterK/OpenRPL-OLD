@@ -15,7 +15,7 @@ _G.__phys_modules__ = setmetatable(Modules, {
 Modules.Instances = require(script:WaitForChild("Instances"))
 Modules.tickHz = require(script:WaitForChild("tickHz"))
 
-local S, thread, WFC = Modules.Common.S, Modules.Common.thread, Modules.Common.WFC
+local S, thread, WFC, New = Modules.Common.S, Modules.Common.thread, Modules.Common.WFC, Modules.Common.New
 local Players = S.Players
 local UIS = S.UserInputService
 local RS = S.RunService
@@ -60,6 +60,10 @@ function Down.r()
 	GroundPhysics = not GroundPhysics
 	print("groundphysics=",GroundPhysics)
 end
+function Down.t()
+	print(PhysicsList)
+	warn("Printed the PhysicsList.")
+end
 
 UIS.InputBegan:Connect(function(input, gp)
 	if not gp then
@@ -89,19 +93,19 @@ function Sides.Top(BasePart)
 	return Mover.CFrame*CN(0,BasePart.Size.y/2,0)
 end
 function Sides.Bottom(BasePart)
-	return Mover.CFrame*CN(0,BasePart.Size.y/-2,0)*ANG(pi/-2,0,0)
+	return Mover.CFrame*CN(0,BasePart.Size.y/-2,0)
 end
 function Sides.Front(BasePart)
 	return Mover.CFrame*CN(0,0,BasePart.Size.z/-2)
 end
 function Sides.Back(BasePart)
-	return Mover.CFrame*CN(0,0,BasePart.Size.z/2)*ANG(0,pi,0)
+	return Mover.CFrame*CN(0,0,BasePart.Size.z/2)
 end
 function Sides.Left(BasePart)
 	return Mover.CFrame*CN(BasePart.Size.x/-2,0,0)
 end
 function Sides.Right(BasePart)
-	return Mover.CFrame*CN(BasePart.Size.x/2,0,0)*ANG(0,pi/-2,0)
+	return Mover.CFrame*CN(BasePart.Size.x/2,0,0)
 end
 --[[
 function getCorners(part)	
@@ -251,13 +255,14 @@ tickStepped.OnNewTick:Connect(function(_)
 	LookZ.CFrame=(Sides.Front(LookZ))*ANG(pi/2,0,0)
 end)
 
+local testCube = New('Part', workspace, {Name='test cube', Anchored=true})
+
 local function ComputePhysic(Obj)
-	local Top = Sides.Top(Obj):Inverse()
-	local Bottom = Sides.Bottom(Obj)
-	local Unit = (Top.p-Bottom.p)+Mover.Position
-	if Unit.Unit > Obj.Size then
-		warn("no clippinggg")
-	end
+	local Top = Sides.Top(Obj)
+	local Bottom = Sides.Bottom(Obj).p+Obj.Position
+	--local Unit = (Bottom.p-Top.p)+Mover.Position
+	
+	testCube.Position = Bottom
 end
 
 RS.RenderStepped:Connect(function()
@@ -265,7 +270,6 @@ RS.RenderStepped:Connect(function()
 		--Grab the physics info after a physics step
 		PhysicsList = PhysicsList_Remote:InvokeServer()
 	end)
-	--figure out a formula to get all sides (baseparts)
 	for i = 1, #PhysicsList do
 		ComputePhysic(PhysicsList[i])
 	end
