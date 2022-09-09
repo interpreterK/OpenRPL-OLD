@@ -22,14 +22,11 @@ Modules.tickHz = require(script:WaitForChild("tickHz"))
 local S, thread, WFC, New = Modules.Common.S, Modules.Common.thread, Modules.Common.WFC, Modules.Common.New
 local Players = S.Players
 local UIS = S.UserInputService
-local RS = S.RunService
-local LocalPlayer = Players.LocalPlayer or Players.PlayerAdded:Wait()
+local Storage = S.ReplicatedStorage
 
 local Mover, FC, Pointer, LookX, LookY, LookZ = Modules.Instances.Mover, Modules.Instances.FC, Modules.Instances.Pointer, Modules.Instances.LookX, Modules.Instances.LookY, Modules.Instances.LookZ
 local V3, CN, ANG, lookAt = Vector3.new, CFrame.new, CFrame.Angles, CFrame.lookAt
-local CN_zero, CN_one, V3_zero, V3_one = CN(0,0,0), CN(1,1,1), Vector3.zero, Vector3.one
 local pi, clamp, abs = math.pi, math.clamp, math.abs
-local insert, find = table.insert, table.find
 
 local cc = workspace.CurrentCamera
 
@@ -38,6 +35,7 @@ local function set_CameraPOV(BasePart)
 	cc.CameraSubject = BasePart
 	cc.CameraType = Enum.CameraType.Custom
 end
+local LocalPlayer = Players.LocalPlayer or Players.PlayerAdded:Wait()
 local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
 char:Destroy()
 set_CameraPOV(Mover)
@@ -45,11 +43,12 @@ FC.Parent = cc
 
 --Init the workspace physics
 local PhysicsList = {}
-local PhysicsList_Remote = WFC(Shared, 'PhysicsList', 10, "Fetching PhysicsList Remote...", "Got the PhysicsList Remote.", "Failed to fetch the PhysicsList, The physics engine will not work!")
 local HitColliders = {
 	x={},y={},z={},
-	neg_x={},neg_y={},neg_z={}
+	inv_x={},inv_y={},inv_z={}
 }
+local PhysicsList_Remote = WFC(Shared, 'PhysicsList', 10, "Fetching PhysicsList Remote...", "Got the PhysicsList Remote.", "Failed to fetch the PhysicsList, The physics engine will not work!")
+local PhysicsFPS = Storage:WaitForChild("PhysicsFPS")
 
 local function Visual_HitCollisions(Type, Obj, Color, Side, Ang)
 	HitColliders[Type][Obj] = New('Part', workspace, {
@@ -59,14 +58,14 @@ local function Visual_HitCollisions(Type, Obj, Color, Side, Ang)
 		Color=Color,
 		Transparency=.5,
 		Position=Obj.CFrame*Side,
-		CFrame=Ang or CN_zero
+		CFrame=Ang or CN()
 	})
 	--CN(0,PhysicsList[i].Size.y/2,0).p
 end
 
 --Controls
 local Hold, Down, Up = {}, {}, {}
-local MouseHit_p = V3_zero
+local MouseHit_p = Vector3.zero
 local Freecam = false
 local GroundPhysics = false
 function Down.f()
@@ -181,9 +180,13 @@ local RenderStepped = Modules.tickHz.new(60, "RenderStepped")
 local z = Vector3.zAxis/10
 local ys = 1
 
-Heartbeat.TickStep:Connect(function(_)
+Heartbeat.TickStep:Connect(function(_,_)
 	local lv, m_lv = cc.CFrame.LookVector, Mover.CFrame.LookVector
 	local rv = cc.CFrame.RightVector
+	if Hold.space then
+		lv = cc.CFrame.LookVector/5
+		rv = cc.CFrame.RightVector/5
+	end
 	if Hold.w then
 		if not Freecam then
 			if GroundPhysics then
@@ -230,19 +233,6 @@ Heartbeat.TickStep:Connect(function(_)
 			FC.Position-=V3(0,ys,0)
 		end
 	end
-	if Hold.space then
-		if not Freecam then
-			if GroundPhysics then
-				--jump
-			else
-				z/=100
-			end
-		end
-		ys = .1
-	else
-		ys = 1
-		z = Vector3.zAxis/10
-	end
 	if not Freecam then
 		Pointer.Position=m_2D_3DVector()
 		FC.Position=Mover.Position
@@ -255,8 +245,8 @@ Heartbeat.TickStep:Connect(function(_)
 	LookZ.CFrame=(Sides.Front(LookZ))*ANG(pi/2,0,0)
 end)
 
-local function Hit_Detection_Top(Obj)
-	local Hit = V3_zero
+local function Hit_Detection_Top(Obj, pos_i)
+	local Hit = Vector3.zero
 	pcall(function()
 		local Top = Obj.CFrame*CN(0,Obj.Size.y/2,0)
 		local Origin = Obj.Position
@@ -271,24 +261,24 @@ local function Hit_Detection_Top(Obj)
 	return Hit
 end
 
-local function Hit_Detection_Bottom(Obj)
-	local Hit = V3_zero
+local function Hit_Detection_Bottom(Obj, pos_i)
+	local Hit = Vector3.zero
 	pcall(function()
-		local Top = Obj.CFrame*CN(0,Obj.Size.y/-2,0)
+		local Bottom = Obj.CFrame*CN(0,Obj.Size.y/-2,0)
 		local Origin = Obj.Position
 		local pos_i = -Mover.Position
-		local point = pos_i+Top.p
+		local point = pos_i+Bottom.p
 		local abs_size_X = abs(Obj.Size.x/-2)
 		local abs_size_Z = abs(Obj.Size.z/-2)
 		local max_sX = clamp(-abs_size_X,-point.x,abs_size_X)
 		local max_sZ = clamp(-abs_size_Z,-point.z,abs_size_Z)
-		Hit = V3(Origin.x+max_sX,Top.p.y,Origin.z+max_sZ)
+		Hit = V3(Origin.x+max_sX,Bottom.p.y,Origin.z+max_sZ)
 	end)
 	return Hit
 end
 
-local function Hit_Detection_Left(Obj)
-	local Hit = V3_zero
+local function Hit_Detection_Left(Obj, pos_i)
+	local Hit = Vector3.zero
 	pcall(function()
 		local Top = Obj.CFrame*CN(Obj.Size.x/-2,0,0)
 		local Origin = Obj.Position
@@ -303,8 +293,8 @@ local function Hit_Detection_Left(Obj)
 	return Hit
 end
 
-local function Hit_Detection_Right(Obj)
-	local Hit = V3_zero
+local function Hit_Detection_Right(Obj, pos_i)
+	local Hit = Vector3.zero
 	pcall(function()
 		local Top = Obj.CFrame*CN(Obj.Size.x/2,0,0)
 		local Origin = Obj.Position
@@ -319,8 +309,8 @@ local function Hit_Detection_Right(Obj)
 	return Hit
 end
 
-local function Hit_Detection_Front(Obj)
-	local Hit = V3_zero
+local function Hit_Detection_Front(Obj, pos_i)
+	local Hit = Vector3.zero
 	pcall(function()
 		local Top = Obj.CFrame*CN(0,0,Obj.Size.z/2)
 		local Origin = Obj.Position
@@ -335,8 +325,8 @@ local function Hit_Detection_Front(Obj)
 	return Hit
 end
 
-local function Hit_Detection_Back(Obj)
-	local Hit = V3_zero
+local function Hit_Detection_Back(Obj, pos_i)
+	local Hit = Vector3.zero
 	pcall(function()
 		local Top = Obj.CFrame*CN(0,0,Obj.Size.z/-2)
 		local Origin = Obj.Position
@@ -351,44 +341,56 @@ local function Hit_Detection_Back(Obj)
 	return Hit
 end
 
-local function ComputePhysic(Obj)
-	--pcall(function()
-		local y_hit_level = Hit_Detection_Top(Obj)
-		local neg_y_hit_level = Hit_Detection_Bottom(Obj)
-		local x_hit_level = Hit_Detection_Left(Obj)
-		local neg_x_hit_level = Hit_Detection_Right(Obj)
-		local z_hit_level = Hit_Detection_Front(Obj)
-		local neg_z_hit_level = Hit_Detection_Back(Obj)
-		
-		if HitColliders.neg_y[Obj] then
-			HitColliders.neg_y[Obj].Position = neg_y_hit_level
-		end
-		if HitColliders.y[Obj] then
-			HitColliders.y[Obj].Position = y_hit_level
-		end
-		if HitColliders.x[Obj] then
-			HitColliders.x[Obj].Position = x_hit_level
-		end
-		if HitColliders.neg_x[Obj] then
-			HitColliders.neg_x[Obj].Position = neg_x_hit_level
-		end
-		if HitColliders.z[Obj] then
-			HitColliders.z[Obj].Position = z_hit_level
-		end
-		if HitColliders.neg_z[Obj] then
-			HitColliders.neg_z[Obj].Position = neg_z_hit_level
-		end
-	--end)
+local function ComputePhysics(Obj)
+	--[[
+		local Position = Obj.Position
+		~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+		Make this possible
+	]]
+
+	local y_hit_level = Hit_Detection_Top(Obj)
+	local inv_y_hit_level = Hit_Detection_Bottom(Obj)
+	local x_hit_level = Hit_Detection_Left(Obj)
+	local inv_x_hit_level = Hit_Detection_Right(Obj)
+	local z_hit_level = Hit_Detection_Front(Obj)
+	local inv_z_hit_level = Hit_Detection_Back(Obj)
+
+	if (Mover.Position-y_hit_level).Magnitude<1 then
+		Mover.Position=V3(Mover.Position.x,y_hit_level.y+Mover.Size.y/2,Mover.Position.z)
+	end
+	if (Mover.Position-x_hit_level).Magnitude<1 then
+		Mover.Position=V3(x_hit_level.x-Mover.Size.x/2,Mover.Position.y,Mover.Position.z)
+	end
+
+	if HitColliders.inv_y[Obj] then
+		HitColliders.inv_y[Obj].Position = inv_y_hit_level
+	end
+	if HitColliders.y[Obj] then
+		HitColliders.y[Obj].Position = y_hit_level
+	end
+	if HitColliders.x[Obj] then
+		HitColliders.x[Obj].Position = x_hit_level
+	end
+	if HitColliders.inv_x[Obj] then
+		HitColliders.inv_x[Obj].Position = inv_x_hit_level
+	end
+	if HitColliders.z[Obj] then
+		HitColliders.z[Obj].Position = z_hit_level
+	end
+	if HitColliders.inv_z[Obj] then
+		HitColliders.inv_z[Obj].Position = inv_z_hit_level
+	end
 end
 
-RenderStepped.TickStep:Connect(function(_)
+RenderStepped.TickStep:Connect(function(tdt,_)
 	thread(function()
 		--Grab the physics info after a physics step
 		PhysicsList = PhysicsList_Remote:InvokeServer()
 	end)
 	for i = 1, #PhysicsList do
-		ComputePhysic(PhysicsList[i])
+		ComputePhysics(PhysicsList[i])
 	end
+	PhysicsFPS:Fire(tdt)
 end)
 
 thread(function()
@@ -398,10 +400,10 @@ thread(function()
 	for i = 1, #PhysicsList do
 		local Obj = PhysicsList[i]
 		Visual_HitCollisions('y',Obj,Color3.new(1,1,0),CN(0,Obj.Size.y/2,0).p)
-		Visual_HitCollisions('neg_y',Obj,Color3.new(0,0,1),CN(0,Obj.Size.y/-2,0).p)
+		Visual_HitCollisions('inv_y',Obj,Color3.new(0,0,1),CN(0,Obj.Size.y/-2,0).p)
 		Visual_HitCollisions('z',Obj,Color3.new(1,0,0),CN(Obj.Size.x/-2,0,0).p,ANG(pi/2,0,0))
-		Visual_HitCollisions('neg_z',Obj,Color3.new(0,1,0),CN(Obj.Size.x/2,0,0).p,ANG(pi/-2,0,0))
-		Visual_HitCollisions('neg_x',Obj,Color3.new(1,0,1),CN(Obj.Size.x/2,0,0).p,ANG(0,0,pi/2))
+		Visual_HitCollisions('inv_z',Obj,Color3.new(0,1,0),CN(Obj.Size.x/2,0,0).p,ANG(pi/-2,0,0))
+		Visual_HitCollisions('inv_x',Obj,Color3.new(1,0,1),CN(Obj.Size.x/2,0,0).p,ANG(0,0,pi/2))
 		Visual_HitCollisions('x',Obj,Color3.new(1,0,1),CN(Obj.Size.x/2,0,0).p,ANG(0,0,pi/-2))
 	end
 end)

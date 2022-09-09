@@ -8,7 +8,7 @@ Mover = New('Part', workspace, {
     Position = Vector3.new(0,100,0),
     Anchored = true,
     CanCollide = false,
-    Transparency = .5
+    --Transparency = .5
 })
 LookY = New('Part', workspace, {
     Name = "looky",
