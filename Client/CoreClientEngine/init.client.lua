@@ -175,7 +175,7 @@ end
 --Step info
 --https://devforum-uploads.s3.dualstack.us-east-2.amazonaws.com/uploads/original/4X/0/b/6/0b6fde38a15dd528063a92ac8916ce3cd84fc1ce.png
 local Heartbeat = Modules.tickHz.new(60, "Heartbeat")
-local RenderStepped = Modules.tickHz.new(60, "RenderStepped")
+local RenderStepped = Modules.tickHz.new(0, "RenderStepped")
 
 local z = Vector3.zAxis/10
 local ys = 1
@@ -245,15 +245,13 @@ Heartbeat.TickStep:Connect(function(_,_)
 	LookZ.CFrame=(Sides.Front(LookZ))*ANG(pi/2,0,0)
 end)
 
-local function Hit_Detection_Top(Obj, pos_i)
+local function Hit_Detection_Top(Object, pos_i, Origin)
 	local Hit = Vector3.zero
 	pcall(function()
-		local Top = Obj.CFrame*CN(0,Obj.Size.y/2,0)
-		local Origin = Obj.Position
-		local pos_i = -Mover.Position
+		local Top = Object.CFrame*CN(0,Object.Size.y/2,0)
 		local point = pos_i+Top.p
-		local abs_size_X = abs(Obj.Size.x/2)
-		local abs_size_Z = abs(Obj.Size.z/2)
+		local abs_size_X = abs(Object.Size.x/2)
+		local abs_size_Z = abs(Object.Size.z/2)
 		local max_sX = clamp(-abs_size_X,-point.x,abs_size_X)
 		local max_sZ = clamp(-abs_size_Z,-point.z,abs_size_Z)
 		Hit =  V3(Origin.x+max_sX,Top.p.y,Origin.z+max_sZ)
@@ -261,15 +259,13 @@ local function Hit_Detection_Top(Obj, pos_i)
 	return Hit
 end
 
-local function Hit_Detection_Bottom(Obj, pos_i)
+local function Hit_Detection_Bottom(Object, pos_i, Origin)
 	local Hit = Vector3.zero
 	pcall(function()
-		local Bottom = Obj.CFrame*CN(0,Obj.Size.y/-2,0)
-		local Origin = Obj.Position
-		local pos_i = -Mover.Position
+		local Bottom = Object.CFrame*CN(0,Object.Size.y/-2,0)
 		local point = pos_i+Bottom.p
-		local abs_size_X = abs(Obj.Size.x/-2)
-		local abs_size_Z = abs(Obj.Size.z/-2)
+		local abs_size_X = abs(Object.Size.x/-2)
+		local abs_size_Z = abs(Object.Size.z/-2)
 		local max_sX = clamp(-abs_size_X,-point.x,abs_size_X)
 		local max_sZ = clamp(-abs_size_Z,-point.z,abs_size_Z)
 		Hit = V3(Origin.x+max_sX,Bottom.p.y,Origin.z+max_sZ)
@@ -277,15 +273,13 @@ local function Hit_Detection_Bottom(Obj, pos_i)
 	return Hit
 end
 
-local function Hit_Detection_Left(Obj, pos_i)
+local function Hit_Detection_Left(Object, pos_i, Origin)
 	local Hit = Vector3.zero
 	pcall(function()
-		local Top = Obj.CFrame*CN(Obj.Size.x/-2,0,0)
-		local Origin = Obj.Position
-		local pos_i = -Mover.Position
+		local Top = Object.CFrame*CN(Object.Size.x/-2,0,0)
 		local point = pos_i+Top.p
-		local abs_size_Y = abs(Obj.Size.y/-2)
-		local abs_size_Z = abs(Obj.Size.z/-2)
+		local abs_size_Y = abs(Object.Size.y/-2)
+		local abs_size_Z = abs(Object.Size.z/-2)
 		local max_sY = clamp(-abs_size_Y,-point.y,abs_size_Y)
 		local max_sZ = clamp(-abs_size_Z,-point.z,abs_size_Z)
 		Hit = V3(Top.p.x,Origin.y+max_sY,Origin.z+max_sZ)
@@ -293,15 +287,13 @@ local function Hit_Detection_Left(Obj, pos_i)
 	return Hit
 end
 
-local function Hit_Detection_Right(Obj, pos_i)
+local function Hit_Detection_Right(Object, pos_i, Origin)
 	local Hit = Vector3.zero
 	pcall(function()
-		local Top = Obj.CFrame*CN(Obj.Size.x/2,0,0)
-		local Origin = Obj.Position
-		local pos_i = -Mover.Position
+		local Top = Object.CFrame*CN(Object.Size.x/2,0,0)
 		local point = pos_i+Top.p
-		local abs_size_Y = abs(Obj.Size.y/2)
-		local abs_size_Z = abs(Obj.Size.z/2)
+		local abs_size_Y = abs(Object.Size.y/2)
+		local abs_size_Z = abs(Object.Size.z/2)
 		local max_sY = clamp(-abs_size_Y,-point.y,abs_size_Y)
 		local max_sZ = clamp(-abs_size_Z,-point.z,abs_size_Z)
 		Hit = V3(Top.p.x,Origin.y+max_sY,Origin.z+max_sZ)
@@ -309,15 +301,13 @@ local function Hit_Detection_Right(Obj, pos_i)
 	return Hit
 end
 
-local function Hit_Detection_Front(Obj, pos_i)
+local function Hit_Detection_Front(Object, pos_i, Origin)
 	local Hit = Vector3.zero
 	pcall(function()
-		local Top = Obj.CFrame*CN(0,0,Obj.Size.z/2)
-		local Origin = Obj.Position
-		local pos_i = -Mover.Position
+		local Top = Object.CFrame*CN(0,0,Object.Size.z/2)
 		local point = pos_i+Top.p
-		local abs_size_Y = abs(Obj.Size.y/2)
-		local abs_size_X = abs(Obj.Size.x/2)
+		local abs_size_Y = abs(Object.Size.y/2)
+		local abs_size_X = abs(Object.Size.x/2)
 		local max_sY = clamp(-abs_size_Y,-point.y,abs_size_Y)
 		local max_sX = clamp(-abs_size_X,-point.x,abs_size_X)
 		Hit = V3(Origin.x+max_sX,Origin.y+max_sY,Top.p.z)
@@ -325,15 +315,13 @@ local function Hit_Detection_Front(Obj, pos_i)
 	return Hit
 end
 
-local function Hit_Detection_Back(Obj, pos_i)
+local function Hit_Detection_Back(Object, pos_i, Origin)
 	local Hit = Vector3.zero
 	pcall(function()
-		local Top = Obj.CFrame*CN(0,0,Obj.Size.z/-2)
-		local Origin = Obj.Position
-		local pos_i = -Mover.Position
+		local Top = Object.CFrame*CN(0,0,Object.Size.z/-2)
 		local point = pos_i+Top.p
-		local abs_size_Y = abs(Obj.Size.y/-2)
-		local abs_size_X = abs(Obj.Size.x/-2)
+		local abs_size_Y = abs(Object.Size.y/-2)
+		local abs_size_X = abs(Object.Size.x/-2)
 		local max_sY = clamp(-abs_size_Y,-point.y,abs_size_Y)
 		local max_sX = clamp(-abs_size_X,-point.x,abs_size_X)
 		Hit = V3(Origin.x+max_sX,Origin.y+max_sY,Top.p.z)
@@ -341,48 +329,61 @@ local function Hit_Detection_Back(Obj, pos_i)
 	return Hit
 end
 
-local function ComputePhysics(Obj)
+--Never recommend below 1 or else the physics will be to ~perfect~
+local StudSteps = 1
+
+local function ComputePhysics(Object)
 	--[[
 		local Position = Obj.Position
 		~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
 		Make this possible
 	]]
+	local Object_Center, Mover_p = Object.Position, Mover.Position
+	local M_bottom, M_left, M_front = Mover.Size.y/2, Mover.Size.x/-2, Mover.Size.z/2
+	local M_top, M_right, M_back = Mover.Size.y-2, Mover.Size.x/2, Mover.Size.z/-2
 
-	local y_hit_level = Hit_Detection_Top(Obj)
-	local inv_y_hit_level = Hit_Detection_Bottom(Obj)
-	local x_hit_level = Hit_Detection_Left(Obj)
-	local inv_x_hit_level = Hit_Detection_Right(Obj)
-	local z_hit_level = Hit_Detection_Front(Obj)
-	local inv_z_hit_level = Hit_Detection_Back(Obj)
+	local y_hit_level, inv_y_hit_level = Hit_Detection_Top(Object, -Mover_p, Object_Center), Hit_Detection_Bottom(Object, -Mover_p, Object_Center)
+	local x_hit_level, inv_x_hit_level = Hit_Detection_Left(Object, -Mover_p, Object_Center), Hit_Detection_Right(Object, -Mover_p, Object_Center)
+	local z_hit_level, inv_z_hit_level = Hit_Detection_Front(Object, -Mover_p, Object_Center), Hit_Detection_Back(Object, -Mover_p, Object_Center)
 
-	if (Mover.Position-y_hit_level).Magnitude<1 then
-		Mover.Position=V3(Mover.Position.x,y_hit_level.y+Mover.Size.y/2,Mover.Position.z)
+	--Come up with a formula to get MinN-MaxN sizes for magnitude and angles of the mover
+
+	if (Mover_p-y_hit_level).Magnitude<StudSteps then
+		Mover.Position=V3(Mover_p.x,y_hit_level.y+M_bottom,Mover_p.z)
 	end
-	if (Mover.Position-x_hit_level).Magnitude<1 then
-		Mover.Position=V3(x_hit_level.x-Mover.Size.x/2,Mover.Position.y,Mover.Position.z)
+	if (Mover_p-x_hit_level).Magnitude<StudSteps then
+		Mover.Position=V3(x_hit_level.x+M_left,Mover_p.y,Mover.Position.z)
+	end
+	if (Mover_p-z_hit_level).Magnitude<StudSteps then
+		Mover.Position=V3(Mover_p.x,Mover_p.y,z_hit_level.z+M_front)
 	end
 
-	if HitColliders.inv_y[Obj] then
-		HitColliders.inv_y[Obj].Position = inv_y_hit_level
+	if (Mover_p-inv_y_hit_level).Magnitude<StudSteps then
+		Mover.Position=V3(Mover_p.x,inv_y_hit_level.y-M_top,Mover_p.z)
 	end
-	if HitColliders.y[Obj] then
-		HitColliders.y[Obj].Position = y_hit_level
+	
+
+	if HitColliders.inv_y[Object] then
+		HitColliders.inv_y[Object].Position = inv_y_hit_level
 	end
-	if HitColliders.x[Obj] then
-		HitColliders.x[Obj].Position = x_hit_level
+	if HitColliders.y[Object] then
+		HitColliders.y[Object].Position = y_hit_level
 	end
-	if HitColliders.inv_x[Obj] then
-		HitColliders.inv_x[Obj].Position = inv_x_hit_level
+	if HitColliders.x[Object] then
+		HitColliders.x[Object].Position = x_hit_level
 	end
-	if HitColliders.z[Obj] then
-		HitColliders.z[Obj].Position = z_hit_level
+	if HitColliders.inv_x[Object] then
+		HitColliders.inv_x[Object].Position = inv_x_hit_level
 	end
-	if HitColliders.inv_z[Obj] then
-		HitColliders.inv_z[Obj].Position = inv_z_hit_level
+	if HitColliders.z[Object] then
+		HitColliders.z[Object].Position = z_hit_level
+	end
+	if HitColliders.inv_z[Object] then
+		HitColliders.inv_z[Object].Position = inv_z_hit_level
 	end
 end
 
-RenderStepped.TickStep:Connect(function(tdt,_)
+RenderStepped.TickStep:Connect(function(tdt,dt)
 	thread(function()
 		--Grab the physics info after a physics step
 		PhysicsList = PhysicsList_Remote:InvokeServer()
@@ -390,7 +391,7 @@ RenderStepped.TickStep:Connect(function(tdt,_)
 	for i = 1, #PhysicsList do
 		ComputePhysics(PhysicsList[i])
 	end
-	PhysicsFPS:Fire(tdt)
+	PhysicsFPS:Fire(dt)
 end)
 
 thread(function()

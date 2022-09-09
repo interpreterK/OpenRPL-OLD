@@ -12,6 +12,10 @@ local function CreateVM(FPS, Step_Func)
     local Hz, tdt = FPS or 60, 0
     local Connection = RunS[Step_Func]:Connect(function(dt)
         tdt+=dt
+        if Hz == 0 then
+            Hz_Bind:Fire(tdt,dt)
+            return
+        end
         if tdt>=1/(Hz+10) then
             Hz_Bind:Fire(tdt,dt)
             tdt=0
