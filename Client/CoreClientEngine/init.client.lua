@@ -1,12 +1,10 @@
 if not game:IsLoaded() then
 	game.Loaded:Wait()
 end
-
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Modules = {
 	Common = require(Shared:WaitForChild("Common"))
 }
-
 _G.__phys_modules__ = setmetatable(Modules, {
 	__index = function(self,i)
 		local fenv = getfenv(2)
@@ -22,9 +20,8 @@ Modules.tickHz = require(script:WaitForChild("tickHz"))
 local S, thread, WFC, New = Modules.Common.S, Modules.Common.thread, Modules.Common.WFC, Modules.Common.New
 local Players = S.Players
 local UIS = S.UserInputService
-local Storage = S.ReplicatedStorage
 
-local Mover, FC, Pointer, LookX, LookY, LookZ = Modules.Instances.Mover, Modules.Instances.FC, Modules.Instances.Pointer, Modules.Instances.LookX, Modules.Instances.LookY, Modules.Instances.LookZ
+local Mover, FC, Pointer = Modules.Instances.Mover, Modules.Instances.FC, Modules.Instances.Pointer
 local V3, CN, ANG, lookAt = Vector3.new, CFrame.new, CFrame.Angles, CFrame.lookAt
 local pi, clamp, abs = math.pi, math.clamp, math.abs
 
@@ -239,9 +236,6 @@ Stepped.TickStep:Connect(function(_,_)
 			Mover.CFrame=lookAt(Mover.Position,m_2D_3DVector())
 		end
 	end
-	LookX.CFrame=(Sides.Left(LookX))*ANG(0,0,pi/2)
-	LookY.CFrame=(Sides.Top(LookY))*ANG(0,pi/2,0)
-	LookZ.CFrame=(Sides.Front(LookZ))*ANG(pi/2,0,0)
 end)
 
 local function Hit_Detection_Top(Object, pos_i, Origin)
@@ -332,14 +326,6 @@ end
 local StudSteps = 1
 
 local function ComputePhysics(Object, Object_p, Mover_p)
-	--[[
-		local Position = Obj.Position
-		^~~~~~~~~~~~~~~~~~~~~~~~~~~~^
-		Make this possible
-	]]
-	local M_bottom, M_left, M_front = Mover.Size.y/2, Mover.Size.x/-2, Mover.Size.z/2
-	local M_top, M_right, M_back = Mover.Size.y-2, Mover.Size.x/2, Mover.Size.z/-2
-
 	local y_hit_level, inv_y_hit_level = Hit_Detection_Top(Object, -Mover_p, Object_p), Hit_Detection_Bottom(Object, -Mover_p, Object_p)
 	local x_hit_level, inv_x_hit_level = Hit_Detection_Left(Object, -Mover_p, Object_p), Hit_Detection_Right(Object, -Mover_p, Object_p)
 	local z_hit_level, inv_z_hit_level = Hit_Detection_Front(Object, -Mover_p, Object_p), Hit_Detection_Back(Object, -Mover_p, Object_p)
@@ -347,20 +333,19 @@ local function ComputePhysics(Object, Object_p, Mover_p)
 	--Come up with a formula to get MinN-MaxN sizes for magnitude and angles of the mover
 
 	if (Mover_p-y_hit_level).Magnitude<StudSteps then
-		Mover.Position=V3(Mover_p.x,y_hit_level.y+M_bottom,Mover_p.z)
+		Mover.Position=V3(Mover_p.x,y_hit_level.y+Mover.Size.y/2,Mover_p.z)
 	end 
 	if (Mover_p-x_hit_level).Magnitude<StudSteps then
-		Mover.Position=V3(x_hit_level.x+M_left,Mover_p.y,Mover.Position.z)
+		Mover.Position=V3(x_hit_level.x+Mover.Size.x/-2,Mover_p.y,Mover.Position.z)
 	end
 	if (Mover_p-z_hit_level).Magnitude<StudSteps then
-		Mover.Position=V3(Mover_p.x,Mover_p.y,z_hit_level.z+M_front)
+		Mover.Position=V3(Mover_p.x,Mover_p.y,z_hit_level.z+Mover.Size.z/2)
 	end
 	
 	if (Mover_p-inv_y_hit_level).Magnitude<StudSteps then
-		Mover.Position=V3(Mover_p.x,inv_y_hit_level.y-M_top,Mover_p.z)
+		Mover.Position=V3(Mover_p.x,inv_y_hit_level.y-Mover.Size.y-2,Mover_p.z)
 	end
 	
-
 	if HitColliders.inv_y[Object] then
 		HitColliders.inv_y[Object].Position = inv_y_hit_level
 	end
@@ -387,19 +372,17 @@ Heartbeat.TickStep:Connect(function(tdt,dt)
 		PhysicsList = PhysicsList_Remote:InvokeServer()
 	end)
 	for i = 1, #PhysicsList do
-		local m_p = Mover.Position
 		local Object = PhysicsList[i]
-		local o_s, o_p = Object.Size, Object.Position
-		local abs_size = (o_s.x/2+o_s.z/2)+o_s.y/2
-		local Mag = (o_s-m_p).Unit+m_p
+		local o_s, m_p, o_p = Object.Size, Mover.Position, Object.Position
+		local Prox = o_s.y<m_p.y/2 or o_s.x<m_p.x/2 or o_s.z<m_p.z/2
+
 		if Object.Name == "Baseplate" then
-			print("Mag=",Mag, "abs_size=",abs_size,"Condition=")
+			print("Object=",o_s.y,"Mover=",m_p.y/2)
 		end
-		--[[
-		if Mag<=abs_size then
+
+		if Prox then
 			ComputePhysics(Object, o_p, m_p)
 		end
-		]]
 	end
 	--PhysicsFPS:Fire(dt)
 end)

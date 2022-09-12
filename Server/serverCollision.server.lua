@@ -11,7 +11,7 @@ PhysicsList_Invoke.OnServerInvoke = function(_)
 end
 
 local function ConditionPassable(i)
-	return i.Anchored and i.CanCollide and not i:IsA("Terrain")
+	return i.Anchored and i.CanCollide and i.ClassName~="Terrain"
 end
 workspace.DescendantAdded:Connect(function(descendant)
 	if descendant:IsA('BasePart') then
