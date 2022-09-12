@@ -28,9 +28,8 @@ local Mover, FC, Pointer, LookX, LookY, LookZ = Modules.Instances.Mover, Modules
 local V3, CN, ANG, lookAt = Vector3.new, CFrame.new, CFrame.Angles, CFrame.lookAt
 local pi, clamp, abs = math.pi, math.clamp, math.abs
 
-local cc = workspace.CurrentCamera
-
 --Remove the default character
+local cc = workspace.CurrentCamera
 local function set_CameraPOV(BasePart)
 	cc.CameraSubject = BasePart
 	cc.CameraType = Enum.CameraType.Custom
@@ -48,7 +47,7 @@ local HitColliders = {
 	inv_x={},inv_y={},inv_z={}
 }
 local PhysicsList_Remote = WFC(Shared, 'PhysicsList', 10, "Fetching PhysicsList Remote...", "Got the PhysicsList Remote.", "Failed to fetch the PhysicsList, The physics engine will not work!")
-local PhysicsFPS = Storage:WaitForChild("PhysicsFPS")
+--local PhysicsFPS = Storage:WaitForChild("PhysicsFPS")
 
 local function Visual_HitCollisions(Type, Obj, Color, Side, Ang)
 	HitColliders[Type][Obj] = New('Part', workspace, {
@@ -174,13 +173,13 @@ end
 
 --Step info
 --https://devforum-uploads.s3.dualstack.us-east-2.amazonaws.com/uploads/original/4X/0/b/6/0b6fde38a15dd528063a92ac8916ce3cd84fc1ce.png
-local Heartbeat = Modules.tickHz.new(60, "Heartbeat")
-local RenderStepped = Modules.tickHz.new(0, "RenderStepped")
+local Heartbeat = Modules.tickHz.new(0, "Heartbeat")
+local Stepped = Modules.tickHz.new(60, "Stepped")
 
 local z = Vector3.zAxis/10
 local ys = 1
 
-Heartbeat.TickStep:Connect(function(_,_)
+Stepped.TickStep:Connect(function(_,_)
 	local lv, m_lv = cc.CFrame.LookVector, Mover.CFrame.LookVector
 	local rv = cc.CFrame.RightVector
 	if Hold.space then
@@ -332,32 +331,31 @@ end
 --Never recommend below 1 or else the physics will be to ~perfect~
 local StudSteps = 1
 
-local function ComputePhysics(Object)
+local function ComputePhysics(Object, Object_p, Mover_p)
 	--[[
 		local Position = Obj.Position
-		~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+		^~~~~~~~~~~~~~~~~~~~~~~~~~~~^
 		Make this possible
 	]]
-	local Object_Center, Mover_p = Object.Position, Mover.Position
 	local M_bottom, M_left, M_front = Mover.Size.y/2, Mover.Size.x/-2, Mover.Size.z/2
 	local M_top, M_right, M_back = Mover.Size.y-2, Mover.Size.x/2, Mover.Size.z/-2
 
-	local y_hit_level, inv_y_hit_level = Hit_Detection_Top(Object, -Mover_p, Object_Center), Hit_Detection_Bottom(Object, -Mover_p, Object_Center)
-	local x_hit_level, inv_x_hit_level = Hit_Detection_Left(Object, -Mover_p, Object_Center), Hit_Detection_Right(Object, -Mover_p, Object_Center)
-	local z_hit_level, inv_z_hit_level = Hit_Detection_Front(Object, -Mover_p, Object_Center), Hit_Detection_Back(Object, -Mover_p, Object_Center)
+	local y_hit_level, inv_y_hit_level = Hit_Detection_Top(Object, -Mover_p, Object_p), Hit_Detection_Bottom(Object, -Mover_p, Object_p)
+	local x_hit_level, inv_x_hit_level = Hit_Detection_Left(Object, -Mover_p, Object_p), Hit_Detection_Right(Object, -Mover_p, Object_p)
+	local z_hit_level, inv_z_hit_level = Hit_Detection_Front(Object, -Mover_p, Object_p), Hit_Detection_Back(Object, -Mover_p, Object_p)
 
 	--Come up with a formula to get MinN-MaxN sizes for magnitude and angles of the mover
 
 	if (Mover_p-y_hit_level).Magnitude<StudSteps then
 		Mover.Position=V3(Mover_p.x,y_hit_level.y+M_bottom,Mover_p.z)
-	end
+	end 
 	if (Mover_p-x_hit_level).Magnitude<StudSteps then
 		Mover.Position=V3(x_hit_level.x+M_left,Mover_p.y,Mover.Position.z)
 	end
 	if (Mover_p-z_hit_level).Magnitude<StudSteps then
 		Mover.Position=V3(Mover_p.x,Mover_p.y,z_hit_level.z+M_front)
 	end
-
+	
 	if (Mover_p-inv_y_hit_level).Magnitude<StudSteps then
 		Mover.Position=V3(Mover_p.x,inv_y_hit_level.y-M_top,Mover_p.z)
 	end
@@ -383,15 +381,27 @@ local function ComputePhysics(Object)
 	end
 end
 
-RenderStepped.TickStep:Connect(function(tdt,dt)
+Heartbeat.TickStep:Connect(function(tdt,dt)
 	thread(function()
 		--Grab the physics info after a physics step
 		PhysicsList = PhysicsList_Remote:InvokeServer()
 	end)
 	for i = 1, #PhysicsList do
-		ComputePhysics(PhysicsList[i])
+		local m_p = Mover.Position
+		local Object = PhysicsList[i]
+		local o_s, o_p = Object.Size, Object.Position
+		local abs_size = (o_s.x/2+o_s.z/2)+o_s.y/2
+		local Mag = (o_s-m_p).Unit+m_p
+		if Object.Name == "Baseplate" then
+			print("Mag=",Mag, "abs_size=",abs_size,"Condition=")
+		end
+		--[[
+		if Mag<=abs_size then
+			ComputePhysics(Object, o_p, m_p)
+		end
+		]]
 	end
-	PhysicsFPS:Fire(dt)
+	--PhysicsFPS:Fire(dt)
 end)
 
 thread(function()

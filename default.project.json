@@ -20,7 +20,8 @@
     "ReplicatedStorage": {
       "Shared": {
         "$path": "Shared"
-      }
+      },
+      "$path": "Scriptable"
     }
   }
 }
