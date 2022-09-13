@@ -4,20 +4,6 @@ Vars.__index = Vars
 local resume, create = coroutine.resume, coroutine.create
 local WFC = game.WaitForChild
 
-Vars.ptrace = function(func)
-	local b,e = pcall(func)
-	if not b then
-		warn(e, debug.traceback())
-	end
-end
-
-Vars.thread = function(thread_f)
-	local b,e = resume(create(thread_f))
-	if not b then
-		warn(e, debug.traceback())
-	end
-end
-
 Vars.S = setmetatable({}, {
 	__index = function(self,i)
 		if not rawget(self,i) then
@@ -37,6 +23,27 @@ Vars.New = function(Inst, Parent, Props)
 	i.Parent = Parent
 	return i
 end
+
+local Storage = Vars.S.ReplicatedStorage
+resume(create(function()
+	
+end))
+
+Vars.ptrace = function(func)
+	local b,e = pcall(func)
+	if not b then
+		warn(e, debug.traceback())
+	end
+end
+
+Vars.thread = function(thread_f)
+	local b,e = resume(create(thread_f))
+	if not b then
+		warn(e, debug.traceback())
+	end
+end
+
+
 
 Vars.Remove = function(Inst)
 	Vars.ptrace(function()

@@ -328,7 +328,7 @@ Heartbeat.TickStep:Connect(function(tdt,dt)
 			ComputePhysics(Object, o_p, m_p)
 		end
 	end
-	--PhysicsFPS:Fire(dt)
+	PhysicsFPS:Fire(dt)
 end)
 
 thread(function()
