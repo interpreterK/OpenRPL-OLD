@@ -106,62 +106,6 @@ UIS.InputChanged:Connect(function(input, _)
 		MouseHit_p = input.Position
 	end
 end)
-local Sides = {}
-function Sides.Top(BasePart)
-	return BasePart.CFrame*CN(0,BasePart.Size.y/2,0)
-end
-function Sides.Bottom(BasePart)
-	return BasePart.CFrame*CN(0,BasePart.Size.y/-2,0)
-end
-function Sides.Front(BasePart)
-	return BasePart.CFrame*CN(0,0,BasePart.Size.z/-2)
-end
-function Sides.Back(BasePart)
-	return BasePart.CFrame*CN(0,0,BasePart.Size.z/2)
-end
-function Sides.Left(BasePart)
-	return BasePart.CFrame*CN(BasePart.Size.x/-2,0,0)
-end
-function Sides.Right(BasePart)
-	return BasePart.CFrame*CN(BasePart.Size.x/2,0,0)
-end
---[[
-function getCorners(part)	
-local cf = part.CFrame
-local size = part.Size
-
-local corners = {}
-
--- helper cframes for intermediate steps
--- before finding the corners cframes.
--- With corners I only need cframe.Position of corner cframes.
-
--- face centers - 2 of 6 faces referenced
-local frontFaceCenter = (cf + cf.LookVector * size.Z/2)
-local backFaceCenter = (cf - cf.LookVector * size.Z/2)
-
--- edge centers - 4 of 12 edges referenced
-local topFrontEdgeCenter = frontFaceCenter + frontFaceCenter.UpVector * size.Y/2
-local bottomFrontEdgeCenter = frontFaceCenter - frontFaceCenter.UpVector * size.Y/2
-local topBackEdgeCenter = backFaceCenter + backFaceCenter.UpVector * size.Y/2
-local bottomBackEdgeCenter = backFaceCenter - backFaceCenter.UpVector * size.Y/2
-
--- corners
-corners.topFrontRight = (topFrontEdgeCenter + topFrontEdgeCenter.RightVector * size.X/2).Position
-corners.topFrontLeft = (topFrontEdgeCenter - topFrontEdgeCenter.RightVector * size.X/2).Position
-
-corners.bottomFrontRight = (bottomFrontEdgeCenter + bottomFrontEdgeCenter.RightVector * size.X/2).Position
-corners.bottomFrontLeft = (bottomFrontEdgeCenter - bottomFrontEdgeCenter.RightVector * size.X/2).Position
-
-corners.topBackRight = (topBackEdgeCenter + topBackEdgeCenter.RightVector * size.X/2).Position
-corners.topBackLeft = (topBackEdgeCenter - topBackEdgeCenter.RightVector * size.X/2).Position
-
-corners.bottomBackRight = (bottomBackEdgeCenter + bottomBackEdgeCenter.RightVector * size.X/2).Position
-corners.bottomBackLeft = (bottomBackEdgeCenter - bottomBackEdgeCenter.RightVector * size.X/2).Position
-
-return corners
-end
-]]
 
 local function m_2D_3DVector() --This is NOT suppose to be mouse.Target or react's to physics *yet* -09/04
 	local SPTR = cc:ScreenPointToRay(MouseHit_p.x, MouseHit_p.y, 0)
