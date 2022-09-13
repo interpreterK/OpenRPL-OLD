@@ -25,6 +25,8 @@ local Mover, FC, Pointer = Modules.Instances.Mover, Modules.Instances.FC, Module
 local V3, CN, ANG, lookAt = Vector3.new, CFrame.new, CFrame.Angles, CFrame.lookAt
 local pi, clamp, abs = math.pi, math.clamp, math.abs
 
+local PhysicsFPS_Remote = PhysicsFPS()
+
 --Remove the default character
 local cc = workspace.CurrentCamera
 local function set_CameraPOV(BasePart)
@@ -320,14 +322,14 @@ Heartbeat.TickStep:Connect(function(tdt,dt)
 		local Prox = o_s.y<m_p.y/2 or o_s.x<m_p.x/2 or o_s.z<m_p.z/2
 
 		if Object.Name == "Baseplate" then
-			print("Object=",o_s.y,"Mover=",m_p.y/2)
+			--print("Object=",o_s.y,"Mover=",m_p.y/2)
 		end
 
 		if Prox then
 			ComputePhysics(Object, o_p, m_p)
 		end
 	end
-	PhysicsFPS:Fire(dt)
+	PhysicsFPS_Remote:Fire(dt)
 end)
 
 thread(function()

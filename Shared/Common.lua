@@ -3,6 +3,7 @@ Vars.__index = Vars
 
 local resume, create = coroutine.resume, coroutine.create
 local WFC = game.WaitForChild
+local PhysicsFPS_Event = nil
 
 Vars.S = setmetatable({}, {
 	__index = function(self,i)
@@ -12,6 +13,7 @@ Vars.S = setmetatable({}, {
 		return rawget(self,i)
 	end
 })
+local Storage = Vars.S.ReplicatedStorage
 
 Vars.ptrace = function(func)
 	local b,e = pcall(func)
@@ -29,17 +31,21 @@ end
 
 Vars.New = function(Inst, Parent, Props)
 	local i = Instance.new(Inst)
-		for prop, val in next, Props or {} do
-			Vars.ptrace(function()
-				i[prop] = val
-			end)
-		end
+	for prop, val in next, Props or {} do
+		Vars.ptrace(function()
+			i[prop] = val
+		end)
+	end
 	i.Parent = Parent
 	return i
 end
 
-local Storage = Vars.S.ReplicatedStorage
-Vars.PhysicsFPS = Vars.New("BindableEvent", Storage, {Name = "PhysicsFPS"})
+Vars.PhysicsFPS = function()
+	if not PhysicsFPS_Event then
+		PhysicsFPS_Event = Vars.New("BindableEvent", Storage, {Name = "PhysicsFPS"})
+	end
+	return PhysicsFPS_Event
+end
 
 Vars.Remove = function(Inst)
 	Vars.ptrace(function()
