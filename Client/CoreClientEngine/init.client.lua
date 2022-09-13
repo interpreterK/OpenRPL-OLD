@@ -17,7 +17,7 @@ _G.__phys_modules__ = setmetatable(Modules, {
 Modules.Instances = require(script:WaitForChild("Instances"))
 Modules.tickHz = require(script:WaitForChild("tickHz"))
 
-local S, thread, WFC, New = Modules.Common.S, Modules.Common.thread, Modules.Common.WFC, Modules.Common.New
+local S, thread, WFC, New, PhysicsFPS = Modules.Common.S, Modules.Common.thread, Modules.Common.WFC, Modules.Common.New, Modules.Common.PhysicsFPS
 local Players = S.Players
 local UIS = S.UserInputService
 
@@ -44,7 +44,6 @@ local HitColliders = {
 	inv_x={},inv_y={},inv_z={}
 }
 local PhysicsList_Remote = WFC(Shared, 'PhysicsList', 10, "Fetching PhysicsList Remote...", "Got the PhysicsList Remote.", "Failed to fetch the PhysicsList, The physics engine will not work!")
---local PhysicsFPS = Storage:WaitForChild("PhysicsFPS")
 
 local function Visual_HitCollisions(Type, Obj, Color, Side, Ang)
 	HitColliders[Type][Obj] = New('Part', workspace, {

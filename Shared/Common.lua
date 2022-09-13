@@ -15,19 +15,19 @@ Vars.S = setmetatable({}, {
 
 Vars.New = function(Inst, Parent, Props)
 	local i = Instance.new(Inst)
-	for prop, val in next, Props or {} do
-		Vars.ptrace(function()
-			i[prop] = val
-		end)
+	if Props then
+		for prop, val in next, Props do
+			Vars.ptrace(function()
+				i[prop] = val
+			end)
+		end
 	end
 	i.Parent = Parent
 	return i
 end
 
 local Storage = Vars.S.ReplicatedStorage
-resume(create(function()
-	
-end))
+Vars.PhysicsFPS = Vars.New("BindableEvent", Storage, {Name = "PhysicsFPS"})
 
 Vars.ptrace = function(func)
 	local b,e = pcall(func)
@@ -42,8 +42,6 @@ Vars.thread = function(thread_f)
 		warn(e, debug.traceback())
 	end
 end
-
-
 
 Vars.Remove = function(Inst)
 	Vars.ptrace(function()
