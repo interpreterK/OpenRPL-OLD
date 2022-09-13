@@ -10,17 +10,25 @@ local RunS = S.RunService
 local function CreateVM(FPS, Step_Func)
     local Hz_Bind = New('BindableEvent')
     local Hz, tdt = FPS or 60, 0
-    local Connection = RunS[Step_Func]:Connect(function(dt)
+    local function HzControl(dt,st)
         tdt+=dt
         if Hz == 0 then
-            Hz_Bind:Fire(tdt,dt)
+            Hz_Bind:Fire(tdt,dt,st)
             return
         end
         if tdt>=1/(Hz+10) then
-            Hz_Bind:Fire(tdt,dt)
+            Hz_Bind:Fire(tdt,dt,st)
             tdt=0
         end
-    end)
+    end
+    local Connection;
+    if Step_Func == "Stepped" then
+        Connection = RunS.Stepped:Connect(function(st,dt)
+            HzControl(dt,st)
+        end)
+    else
+        Connection = RunS[Step_Func]:Connect(HzControl)
+    end
     return {
         Hz_Bind = Hz_Bind,
         Connection = Connection
