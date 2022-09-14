@@ -48,4 +48,10 @@ for i = 1, #desc do
 	end
 end
 
-print("Ignored post-init instances=", IgnoredPhysicsList)
+print("Ignored post-init instances=",'{')
+for i,v in next, IgnoredPhysicsList do
+	print("["..tostring(i).."] = "..tostring(v)..",")
+	if i == #IgnoredPhysicsList then
+		print('}')
+	end
+end

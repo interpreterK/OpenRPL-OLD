@@ -17,7 +17,7 @@ _G.__phys_modules__ = setmetatable(Modules, {
 Modules.Instances = require(script:WaitForChild("Instances"))
 Modules.tickHz = require(script:WaitForChild("tickHz"))
 
-local S, thread, WFC, New, PhysicsFPS = Modules.Common.S, Modules.Common.thread, Modules.Common.WFC, Modules.Common.New, Modules.Common.PhysicsFPS
+local S, thread, WFC, New, PhysicsFPS, PlayerFPS = Modules.Common.S, Modules.Common.thread, Modules.Common.WFC, Modules.Common.New, Modules.Common.PhysicsFPS, Modules.Common.PlayerFPS
 local Players = S.Players
 local UIS = S.UserInputService
 
@@ -26,6 +26,7 @@ local V3, CN, ANG, lookAt = Vector3.new, CFrame.new, CFrame.Angles, CFrame.lookA
 local pi, clamp, abs = math.pi, math.clamp, math.abs
 
 local PhysicsFPS_Remote = PhysicsFPS()
+local PlayerFPS_Remote = PlayerFPS()
 
 --Remove the default character
 local cc = workspace.CurrentCamera
@@ -121,7 +122,7 @@ local Stepped = Modules.tickHz.new(60, "Stepped")
 local z = Vector3.zAxis/10
 local ys = 1
 
-Stepped.TickStep:Connect(function(_,_)
+Stepped.TickStep:Connect(function(tdt,dt)
 	local lv, m_lv = cc.CFrame.LookVector, Mover.CFrame.LookVector
 	local rv = cc.CFrame.RightVector
 	if Hold.space then
@@ -181,6 +182,7 @@ Stepped.TickStep:Connect(function(_,_)
 			Mover.CFrame=lookAt(Mover.Position,m_2D_3DVector())
 		end
 	end
+	PlayerFPS_Remote:Fire(dt)
 end)
 
 local function Hit_Detection_Top(Object, pos_i, Origin)
@@ -288,7 +290,13 @@ local function ComputePhysics(Object, Object_p, Mover_p)
 	end
 	
 	if (Mover_p-inv_y_hit_level).Magnitude<StudSteps then
-		Mover.Position=V3(Mover_p.x,inv_y_hit_level.y-Mover.Size.y-2,Mover_p.z)
+		Mover.Position=V3(Mover_p.x,inv_y_hit_level.y+Mover.Size.y/-2,Mover_p.z)
+	end
+	if (Mover_p-inv_x_hit_level).Magnitude<StudSteps then
+		Mover.Position=V3(inv_x_hit_level.x+Mover_p.x/2,Mover_p.y,Mover_p.z)
+	end
+	if (Mover_p-inv_z_hit_level).Magnitude<StudSteps then
+		Mover.Position=V3(Mover_p.x,Mover_p.y,inv_z_hit_level.z+Mover_p.z/-2)
 	end
 	
 	if HitColliders.inv_y[Object] then
@@ -342,7 +350,7 @@ thread(function()
 		Visual_HitCollisions('inv_y',Obj,Color3.new(0,0,1),CN(0,Obj.Size.y/-2,0).p)
 		Visual_HitCollisions('z',Obj,Color3.new(1,0,0),CN(Obj.Size.x/-2,0,0).p,ANG(pi/2,0,0))
 		Visual_HitCollisions('inv_z',Obj,Color3.new(0,1,0),CN(Obj.Size.x/2,0,0).p,ANG(pi/-2,0,0))
-		Visual_HitCollisions('inv_x',Obj,Color3.new(1,0,1),CN(Obj.Size.x/2,0,0).p,ANG(0,0,pi/2))
 		Visual_HitCollisions('x',Obj,Color3.new(1,0,1),CN(Obj.Size.x/2,0,0).p,ANG(0,0,pi/-2))
+		Visual_HitCollisions('inv_x',Obj,Color3.new(0,1,1),CN(Obj.Size.x/2,0,0).p,ANG(0,0,pi/2))
 	end
 end)

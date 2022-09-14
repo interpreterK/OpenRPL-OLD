@@ -2,8 +2,8 @@ local Vars = {}
 Vars.__index = Vars
 
 local resume, create = coroutine.resume, coroutine.create
+local PhysicsFPS_Event, PlayerFPS_Event, Statistic_bind = nil, nil, nil
 local WFC = game.WaitForChild
-local PhysicsFPS_Event = nil
 
 Vars.S = setmetatable({}, {
 	__index = function(self,i)
@@ -42,9 +42,22 @@ end
 
 Vars.PhysicsFPS = function()
 	if not PhysicsFPS_Event then
-		PhysicsFPS_Event = Vars.New("BindableEvent", Storage, {Name = "PhysicsFPS"})
+		if not Statistic_bind then
+			Statistic_bind = Vars.New("Folder", Storage, {Name = "Statistic"})
+		end
+		PhysicsFPS_Event = Vars.New("BindableEvent", Statistic_bind, {Name = "PhysicsFPS"})
 	end
 	return PhysicsFPS_Event
+end
+
+Vars.PlayerFPS = function()
+	if not PlayerFPS_Event then
+		if not Statistic_bind then
+			Statistic_bind = Vars.New("Folder", Storage, {Name = "Statistic"})
+		end
+		PlayerFPS_Event = Vars.New("BindableEvent", Statistic_bind, {Name = "PlayerFPS"})
+	end
+	return PlayerFPS_Event
 end
 
 Vars.Remove = function(Inst)
