@@ -85,7 +85,7 @@ end
 local Hold, Down, Up = {}, {}, {}
 local MouseHit_p = Vector3.zero
 local Freecam = false
-local GroundPhysics = false
+local Ground = false
 local Hit_Indicators = true
 function Down.f()
 	Freecam = not Freecam
@@ -97,8 +97,8 @@ function Down.f()
 	print("freecam=",Freecam)
 end
 function Down.r()
-	GroundPhysics = not GroundPhysics
-	print("groundphysics=",GroundPhysics)
+	Ground = not Ground
+	print("Ground=",Ground)
 end
 function Down.t()
 	print(PhysicsList)
@@ -134,11 +134,6 @@ UIS.InputChanged:Connect(function(input, _)
 	end
 end)
 
-local function m_2D_3DVector() --This is NOT suppose to be mouse.Target or react's to physics *yet* -09/04
-	local SPTR = cc:ScreenPointToRay(MouseHit_p.x, MouseHit_p.y, 0)
-	return (SPTR.Origin+Mover.CFrame.LookVector+SPTR.Direction*(cc.CFrame.p-Mover.CFrame.p).Magnitude*2)
-end
-
 --Step info
 --https://devforum-uploads.s3.dualstack.us-east-2.amazonaws.com/uploads/original/4X/0/b/6/0b6fde38a15dd528063a92ac8916ce3cd84fc1ce.png
 local Heartbeat = Modules.tickHz.new(0, "Heartbeat")
@@ -147,17 +142,19 @@ local Stepped = Modules.tickHz.new(60, "Stepped")
 local z = Vector3.zAxis/10
 local ys = 1
 
+local function m_2D_3DVector() --This is NOT suppose to be mouse.Target or react's to physics *yet* -09/04
+	local SPTR = cc:ScreenPointToRay(MouseHit_p.x, MouseHit_p.y, 0)
+	return (SPTR.Origin+Mover.CFrame.LookVector+SPTR.Direction*(cc.CFrame.p-Mover.CFrame.p).Magnitude*2)
+end
+
 Stepped.TickStep:Connect(function(tdt,dt)
 	local lv, m_lv = cc.CFrame.LookVector, Mover.CFrame.LookVector
 	local rv = cc.CFrame.RightVector
-	if Hold.space then
-		lv = cc.CFrame.LookVector/5
-		rv = cc.CFrame.RightVector/5
-	end
+
 	if Hold.w then
 		if not Freecam then
-			if GroundPhysics then
-				
+			if Ground then
+				Mover.Position+=m_lv+z
 			else
 				Mover.Position+=lv+z
 			end
@@ -201,10 +198,13 @@ Stepped.TickStep:Connect(function(tdt,dt)
 		end
 	end
 	if not Freecam then
-		Pointer.Position=m_2D_3DVector()
+		local Dir = m_2D_3DVector()
+		Pointer.Position=Dir
 		FC.Position=Mover.Position
-		if not GroundPhysics then
-			Mover.CFrame=lookAt(Mover.Position,m_2D_3DVector())
+		if not Ground then
+			Mover.CFrame=lookAt(Mover.Position,Dir)
+		else
+			Mover.CFrame=lookAt(Mover.Position,V3(Dir.x,0,Dir.z))
 		end
 	end
 	PlayerFPS_Remote:Fire(dt)
@@ -296,12 +296,20 @@ end
 
 --Never recommend below 1 or else the physics will be to ~perfect~
 local StudSteps = 1
+local MaxGround_Detect = 100
 
 local function ComputePhysics(Object, Object_p, Mover_p)
 	local y_hit_level, inv_y_hit_level = Hit_Detection_Top(Object, -Mover_p, Object_p), Hit_Detection_Bottom(Object, -Mover_p, Object_p)
 	local x_hit_level, inv_x_hit_level = Hit_Detection_Left(Object, -Mover_p, Object_p), Hit_Detection_Right(Object, -Mover_p, Object_p)
 	local z_hit_level, inv_z_hit_level = Hit_Detection_Front(Object, -Mover_p, Object_p), Hit_Detection_Back(Object, -Mover_p, Object_p)
-
+	
+	if Ground then
+		local Ground_Detect = (y_hit_level+Mover.Position).Unit+(Object.Size/2)
+		local Ground_Unit = -((Ground_Detect-Mover.Position).Unit.y*(Ground_Detect+Mover.Position).Magnitude)
+		if Ground_Unit<=MaxGround_Detect then
+			Mover.Position=V3(Mover.Position.x,y_hit_level.y+Object.Size.y/2,Mover.Position.z)
+		end
+	end
 	--Come up with a formula to get MinN-MaxN sizes for magnitude and angles of the mover
 
 	if (Mover_p-y_hit_level).Magnitude<StudSteps then
