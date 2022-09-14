@@ -24,6 +24,7 @@ local UIS = S.UserInputService
 local Mover, FC, Pointer = Modules.Instances.Mover, Modules.Instances.FC, Modules.Instances.Pointer
 local V3, CN, ANG, lookAt = Vector3.new, CFrame.new, CFrame.Angles, CFrame.lookAt
 local pi, clamp, abs = math.pi, math.clamp, math.abs
+local move = table.move
 
 local PhysicsFPS_Remote = PhysicsFPS()
 local PlayerFPS_Remote = PlayerFPS()
@@ -41,13 +42,12 @@ set_CameraPOV(Mover)
 FC.Parent = cc
 
 --Init the workspace physics
+local PhysicsList_Remote = WFC(Shared, 'PhysicsList', 10, "Fetching PhysicsList Remote...", "Got the PhysicsList Remote.", "Failed to fetch the PhysicsList, The physics engine will not work!")
 local PhysicsList = {}
 local HitColliders = {
 	x={},y={},z={},
 	inv_x={},inv_y={},inv_z={}
 }
-local PhysicsList_Remote = WFC(Shared, 'PhysicsList', 10, "Fetching PhysicsList Remote...", "Got the PhysicsList Remote.", "Failed to fetch the PhysicsList, The physics engine will not work!")
-
 local function Visual_HitCollisions(Type, Obj, Color, Side, Ang)
 	HitColliders[Type][Obj] = New('Part', workspace, {
 		Name='physics hit',
@@ -58,7 +58,27 @@ local function Visual_HitCollisions(Type, Obj, Color, Side, Ang)
 		Position=Obj.CFrame*Side,
 		CFrame=Ang or CN()
 	})
-	--CN(0,PhysicsList[i].Size.y/2,0).p
+end
+local function HitCollisions_Visibility(value)
+	local tobool = value and .5 or 1
+	for _,v in next, HitColliders.x do
+		v.Transparency = tobool
+	end
+	for _,v in next, HitColliders.y do
+		v.Transparency = tobool
+	end
+	for _,v in next, HitColliders.z do
+		v.Transparency = tobool
+	end
+	for _,v in next, HitColliders.inv_x do
+		v.Transparency = tobool
+	end
+	for _,v in next, HitColliders.inv_y do
+		v.Transparency = tobool
+	end
+	for _,v in next, HitColliders.inv_z do
+		v.Transparency = tobool
+	end
 end
 
 --Controls
@@ -66,6 +86,7 @@ local Hold, Down, Up = {}, {}, {}
 local MouseHit_p = Vector3.zero
 local Freecam = false
 local GroundPhysics = false
+local Hit_Indicators = true
 function Down.f()
 	Freecam = not Freecam
 	if Freecam then
@@ -83,7 +104,11 @@ function Down.t()
 	print(PhysicsList)
 	warn("Printed the PhysicsList.")
 end
-Down.g = HitCollisions
+function Down.g()
+	Hit_Indicators = not Hit_Indicators
+	HitCollisions_Visibility(Hit_Indicators)
+	print("hit indicators=",Hit_Indicators)
+end
 
 UIS.InputBegan:Connect(function(input, gp)
 	if not gp then
@@ -290,32 +315,34 @@ local function ComputePhysics(Object, Object_p, Mover_p)
 	end
 	
 	if (Mover_p-inv_y_hit_level).Magnitude<StudSteps then
-		Mover.Position=V3(Mover_p.x,inv_y_hit_level.y+Mover.Size.y/-2,Mover_p.z)
+		Mover.Position=V3(Mover_p.x,inv_y_hit_level.y-Mover.Size.y/2,Mover_p.z)
 	end
 	if (Mover_p-inv_x_hit_level).Magnitude<StudSteps then
-		Mover.Position=V3(inv_x_hit_level.x+Mover_p.x/2,Mover_p.y,Mover_p.z)
+		Mover.Position=V3(inv_x_hit_level.x-Mover.Size.x/-2,Mover_p.y,Mover_p.z)
 	end
 	if (Mover_p-inv_z_hit_level).Magnitude<StudSteps then
-		Mover.Position=V3(Mover_p.x,Mover_p.y,inv_z_hit_level.z+Mover_p.z/-2)
+		Mover.Position=V3(Mover_p.x,Mover_p.y,inv_z_hit_level.z-Mover.Size.z/2)
 	end
 	
-	if HitColliders.inv_y[Object] then
-		HitColliders.inv_y[Object].Position = inv_y_hit_level
-	end
-	if HitColliders.y[Object] then
-		HitColliders.y[Object].Position = y_hit_level
-	end
-	if HitColliders.x[Object] then
-		HitColliders.x[Object].Position = x_hit_level
-	end
-	if HitColliders.inv_x[Object] then
-		HitColliders.inv_x[Object].Position = inv_x_hit_level
-	end
-	if HitColliders.z[Object] then
-		HitColliders.z[Object].Position = z_hit_level
-	end
-	if HitColliders.inv_z[Object] then
-		HitColliders.inv_z[Object].Position = inv_z_hit_level
+	if Hit_Indicators then
+		if HitColliders.inv_y[Object] then
+			HitColliders.inv_y[Object].Position = inv_y_hit_level
+		end
+		if HitColliders.y[Object] then
+			HitColliders.y[Object].Position = y_hit_level
+		end
+		if HitColliders.x[Object] then
+			HitColliders.x[Object].Position = x_hit_level
+		end
+		if HitColliders.inv_x[Object] then
+			HitColliders.inv_x[Object].Position = inv_x_hit_level
+		end
+		if HitColliders.z[Object] then
+			HitColliders.z[Object].Position = z_hit_level
+		end
+		if HitColliders.inv_z[Object] then
+			HitColliders.inv_z[Object].Position = inv_z_hit_level
+		end
 	end
 end
 
@@ -327,7 +354,7 @@ Heartbeat.TickStep:Connect(function(tdt,dt)
 	for i = 1, #PhysicsList do
 		local Object = PhysicsList[i]
 		local o_s, m_p, o_p = Object.Size, Mover.Position, Object.Position
-		local Prox = o_s.y<m_p.y/2 or o_s.x<m_p.x/2 or o_s.z<m_p.z/2
+		local Prox = o_s.y/2<m_p.y/2 or o_s.x/-2<m_p.x/-2 or o_s.z/2<m_p.z/2
 
 		if Object.Name == "Baseplate" then
 			--print("Object=",o_s.y,"Mover=",m_p.y/2)
