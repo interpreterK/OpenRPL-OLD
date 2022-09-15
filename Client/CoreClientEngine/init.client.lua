@@ -24,7 +24,6 @@ local UIS = S.UserInputService
 local Mover, FC, Pointer = Modules.Instances.Mover, Modules.Instances.FC, Modules.Instances.Pointer
 local V3, CN, ANG, lookAt = Vector3.new, CFrame.new, CFrame.Angles, CFrame.lookAt
 local pi, clamp, abs = math.pi, math.clamp, math.abs
-local move = table.move
 
 local PhysicsFPS_Remote = PhysicsFPS()
 local PlayerFPS_Remote = PlayerFPS()
@@ -143,13 +142,13 @@ local z = Vector3.zAxis/10
 local ys = 1
 
 local function m_2D_3DVector() --This is NOT suppose to be mouse.Target or react's to physics *yet* -09/04
-	local SPTR = cc:ScreenPointToRay(MouseHit_p.x, MouseHit_p.y, 0)
+	local SPTR = cc:ScreenPointToRay(MouseHit_p.x,MouseHit_p.y,0)
 	return (SPTR.Origin+Mover.CFrame.LookVector+SPTR.Direction*(cc.CFrame.p-Mover.CFrame.p).Magnitude*2)
 end
 
 Stepped.TickStep:Connect(function(tdt,dt)
 	local lv, m_lv = cc.CFrame.LookVector, Mover.CFrame.LookVector
-	local rv = cc.CFrame.RightVector
+	local rv, m_rv = cc.CFrame.RightVector, Mover.CFrame.RightVector
 
 	if Hold.w then
 		if not Freecam then
@@ -164,21 +163,34 @@ Stepped.TickStep:Connect(function(tdt,dt)
 	end
 	if Hold.s then
 		if not Freecam then
-			Mover.Position-=lv+z
+			if Ground then
+				Mover.Position-=m_lv+z
+			else
+				Mover.Position-=lv+z
+			end
 		else
 			FC.Position-=lv+z
 		end
 	end
 	if Hold.a then
 		if not Freecam then
-			Mover.Position-=rv+z
+			if Ground then
+				Mover.Position-=m_rv+z
+			else
+				Mover.Position-=rv+z
+			end
 		else
 			FC.Position-=rv+z
 		end
 	end
 	if Hold.d then
 		if not Freecam then
-			Mover.Position+=rv+z
+			if Ground then
+				Mover.Position+=m_rv+z
+			else
+				Mover.Position+=rv+z
+			end
+
 		else
 			FC.Position+=rv+z
 		end
@@ -294,7 +306,7 @@ local function Hit_Detection_Back(Object, pos_i, Origin)
 	return Hit
 end
 
---Never recommend below 1 or else the physics will be to ~perfect~
+--Never recommend below 1 or else the hit detection will/can be to ~perfect~
 local StudSteps = 1
 local MaxGround_Detect = 100
 
@@ -307,30 +319,37 @@ local function ComputePhysics(Object, Object_p, Mover_p)
 		local Ground_Detect = (y_hit_level+Mover.Position).Unit+(Object.Size/2)
 		local Ground_Unit = -((Ground_Detect-Mover.Position).Unit.y*(Ground_Detect+Mover.Position).Magnitude)
 		if Ground_Unit<=MaxGround_Detect then
-			Mover.Position=V3(Mover.Position.x,y_hit_level.y+Object.Size.y/2,Mover.Position.z)
+			Mover.Position=V3(Mover.Position.x,Object.Size.y/2,Mover.Position.z)
 		end
 	end
-	--Come up with a formula to get MinN-MaxN sizes for magnitude and angles of the mover
-
-	if (Mover_p-y_hit_level).Magnitude<StudSteps then
-		Mover.Position=V3(Mover_p.x,y_hit_level.y+Mover.Size.y/2,Mover_p.z)
-	end 
-	if (Mover_p-x_hit_level).Magnitude<StudSteps then
-		Mover.Position=V3(x_hit_level.x+Mover.Size.x/-2,Mover_p.y,Mover.Position.z)
-	end
-	if (Mover_p-z_hit_level).Magnitude<StudSteps then
-		Mover.Position=V3(Mover_p.x,Mover_p.y,z_hit_level.z+Mover.Size.z/2)
-	end
 	
-	if (Mover_p-inv_y_hit_level).Magnitude<StudSteps then
-		Mover.Position=V3(Mover_p.x,inv_y_hit_level.y-Mover.Size.y/2,Mover_p.z)
+	if Object.Name == "Baseplate" then
+		
 	end
-	if (Mover_p-inv_x_hit_level).Magnitude<StudSteps then
-		Mover.Position=V3(inv_x_hit_level.x-Mover.Size.x/-2,Mover_p.y,Mover_p.z)
-	end
-	if (Mover_p-inv_z_hit_level).Magnitude<StudSteps then
-		Mover.Position=V3(Mover_p.x,Mover_p.y,inv_z_hit_level.z-Mover.Size.z/2)
-	end
+
+	--Come up with a formula to get MinN-MaxN sizes for magnitude and angles of the mover
+	--[[
+		if (Mover_p-y_hit_level).Magnitude<StudSteps then
+			Mover.Position=V3(Mover_p.x,y_hit_level.y+Mover.Size.y/2,Mover_p.z)
+		end
+		if (Mover_p-x_hit_level).Magnitude<StudSteps then
+			Mover.Position=V3(x_hit_level.x+Mover.Size.x/-2,Mover_p.y,Mover.Position.z)
+		end
+		if (Mover_p-z_hit_level).Magnitude<StudSteps then
+			Mover.Position=V3(Mover_p.x,Mover_p.y,z_hit_level.z+Mover.Size.z/2)
+		end
+		
+		if (Mover_p-inv_y_hit_level).Magnitude<StudSteps then
+			Mover.Position=V3(Mover_p.x,inv_y_hit_level.y-Mover.Size.y/2,Mover_p.z)
+		end
+		if (Mover_p-inv_x_hit_level).Magnitude<StudSteps then
+			Mover.Position=V3(inv_x_hit_level.x-Mover.Size.x/-2,Mover_p.y,Mover_p.z)
+		end
+		if (Mover_p-inv_z_hit_level).Magnitude<StudSteps then
+			Mover.Position=V3(Mover_p.x,Mover_p.y,inv_z_hit_level.z-Mover.Size.z/2)
+		end
+	]]
+
 	
 	if Hit_Indicators then
 		if HitColliders.inv_y[Object] then
