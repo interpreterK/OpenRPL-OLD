@@ -7,9 +7,10 @@ local S, New = Common.S, Common.New
 
 local RunS = S.RunService
 
-local function CreateVM(FPS, Step_Func)
+local function CreateVM(Hz, Step_Func)
     local Hz_Bind = New('BindableEvent')
-    local Hz, tdt = FPS or 60, 0
+    local tdt = 0
+    Hz = Hz or 60
     local function HzControl(dt,st)
         tdt+=dt
         if Hz == 0 then
