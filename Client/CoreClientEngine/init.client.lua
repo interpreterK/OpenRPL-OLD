@@ -216,7 +216,7 @@ Stepped.TickStep:Connect(function(tdt,dt)
 		if not Ground then
 			Mover.CFrame=lookAt(Mover.Position,Dir)
 		else
-			Mover.CFrame=lookAt(Mover.Position,V3(Dir.x,0,Dir.z))
+			--Mover.CFrame=lookAt(Mover.Position,V3(Dir.x,0,Dir.z))
 		end
 	end
 	PlayerFPS_Remote:Fire(dt)
@@ -319,36 +319,31 @@ local function ComputePhysics(Object, Object_p, Mover_p)
 		local Ground_Detect = (y_hit_level+Mover.Position).Unit+(Object.Size/2)
 		local Ground_Unit = -((Ground_Detect-Mover.Position).Unit.y*(Ground_Detect+Mover.Position).Magnitude)
 		if Ground_Unit<=MaxGround_Detect then
-			Mover.Position=V3(Mover.Position.x,Object.Size.y/2,Mover.Position.z)
+			Mover.Position=V3(Mover.Position.x,inv_y_hit_level.y+Object.Size.y,Mover.Position.z)
+			--Mover.CFrame*=ANG(0,pi/2,0)
 		end
 	end
 	
-	if Object.Name == "Baseplate" then
-		
-	end
-
 	--Come up with a formula to get MinN-MaxN sizes for magnitude and angles of the mover
-	--[[
-		if (Mover_p-y_hit_level).Magnitude<StudSteps then
+		if (Mover_p-y_hit_level).Magnitude<=StudSteps then
 			Mover.Position=V3(Mover_p.x,y_hit_level.y+Mover.Size.y/2,Mover_p.z)
 		end
-		if (Mover_p-x_hit_level).Magnitude<StudSteps then
+		if (Mover_p-x_hit_level).Magnitude<=StudSteps then
 			Mover.Position=V3(x_hit_level.x+Mover.Size.x/-2,Mover_p.y,Mover.Position.z)
 		end
-		if (Mover_p-z_hit_level).Magnitude<StudSteps then
+		if (Mover_p-z_hit_level).Magnitude<=StudSteps then
 			Mover.Position=V3(Mover_p.x,Mover_p.y,z_hit_level.z+Mover.Size.z/2)
 		end
 		
-		if (Mover_p-inv_y_hit_level).Magnitude<StudSteps then
+		if (Mover_p-inv_y_hit_level).Magnitude<=StudSteps then
 			Mover.Position=V3(Mover_p.x,inv_y_hit_level.y-Mover.Size.y/2,Mover_p.z)
 		end
-		if (Mover_p-inv_x_hit_level).Magnitude<StudSteps then
+		if (Mover_p-inv_x_hit_level).Magnitude<=StudSteps then
 			Mover.Position=V3(inv_x_hit_level.x-Mover.Size.x/-2,Mover_p.y,Mover_p.z)
 		end
-		if (Mover_p-inv_z_hit_level).Magnitude<StudSteps then
+		if (Mover_p-inv_z_hit_level).Magnitude<=StudSteps then
 			Mover.Position=V3(Mover_p.x,Mover_p.y,inv_z_hit_level.z-Mover.Size.z/2)
 		end
-	]]
 
 	
 	if Hit_Indicators then
