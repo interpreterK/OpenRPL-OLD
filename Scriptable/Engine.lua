@@ -1,11 +1,9 @@
 --This module makes the engine scriptable and interactable with the client or server
 
-local Engine = {
-    Objects = {
-        Server = {},
-        Client = {}
-    }
-}
+local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local Common = require(Shared:WaitForChild("Common"))
+
+local Engine = {Objects = {}}
 Engine.__index = Engine
 Engine.__metatable = nil
 
@@ -17,30 +15,36 @@ function Engine.__newindex(self,i,v)
     end
 end
 
-local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
-local Common = require(Shared:WaitForChild("Common"))
 local S = Common.S
-
 local RunS = S.RunService
 
-local Default_Properties = {
+local Properties = setmetatable({
     Collisions = true,
     Anchored = true
-}
-local Properties = setmetatable(Default_Properties, {
+}, {
     __index = function(self,i)
         return rawget(self,i)
+    end,
+    __newindex = function(self,i,v)
+        if rawget(self,i) then
+            rawset(self,i,v)
+        else
+            print("\""..tostring(i).."\"", "Is not a valid member of Properties.")
+        end
     end,
     __metatable = nil
 })
 
-function Engine.newObject(Object)
+function Engine.New(Object)
     Engine.Objects[Object] = Properties
 end
 
 function Engine:SetProperties(Object, meta_Props)
     assert(self.Objects[Object], "Unknown Instance: \""..tostring(Object).."\"")
-    
+    Engine.Objects[Object] = Properties
+    for ind, val in next, meta_Props do
+        Engine.Objects[Object][ind] = val
+    end
 end
 
 return Engine
