@@ -12,11 +12,11 @@ local function CreateVM(Hz, Step_Func)
     local tdt = 0
     Hz = Hz or 60
     local function HzControl(dt,st)
-        tdt+=dt
         if Hz == 0 then
             Hz_Bind:Fire(tdt,dt,st)
             return
         end
+        tdt+=dt
         if tdt>=1/(Hz+10) then
             Hz_Bind:Fire(tdt,dt,st)
             tdt=0
