@@ -7,10 +7,13 @@ local S, New = Common.S, Common.New
 
 local RunS = S.RunService
 
-local function CreateVM(Hz, Step_Func)
+local function CreateVM(Hz, Step_Func, STEP)
     local Hz_Bind = New('BindableEvent')
     local tdt = 0
     Hz = Hz or 60
+    if STEP then
+        Hz=Hz/2
+    end
     local function HzControl(dt,st)
         if Hz == 0 then
             Hz_Bind:Fire(tdt,dt,st)
@@ -25,7 +28,7 @@ local function CreateVM(Hz, Step_Func)
     local Connection;
     if Step_Func == "Stepped" then
         Connection = RunS.Stepped:Connect(function(st,dt)
-            HzControl(dt,st)
+            HzControl(dt,st,true)
         end)
     else
         Connection = RunS[Step_Func]:Connect(HzControl)

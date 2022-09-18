@@ -8,7 +8,7 @@ Mover = New('Part', workspace, {
     Position = Vector3.new(0,100,0),
     Anchored = true,
     CanCollide = false,
-    --Transparency = .5
+    Transparency = .2
 })
 FC = New('Part', workspace, {
     Size = Vector3.zero,
@@ -23,6 +23,26 @@ Pointer = New('Part', workspace, {
     CanCollide = false,
     Anchored = true
 })
-
+debug_lookX = New('Part', workspace, {
+    Size = Vector3.new(1,3,1),
+    Color = Color3.new(1,0,0),
+    CanCollide = false,
+    Anchored = true,
+    Transparency = 1
+})
+debug_lookY = New('Part', workspace, {
+    Size = Vector3.new(1,3,1),
+    Color = Color3.new(0,1,0),
+    CanCollide = false,
+    Anchored = true,
+    Transparency = 1
+})
+debug_lookZ = New('Part', workspace, {
+    Size = Vector3.new(1,3,1),
+    Color = Color3.new(0,0,1),
+    CanCollide = false,
+    Anchored = true,
+    Transparency = 1
+})
 
 return getfenv()

@@ -17,13 +17,20 @@ _G.__phys_modules__ = setmetatable(Modules, {
 Modules.Instances = require(script:WaitForChild("Instances"))
 Modules.tickHz = require(script:WaitForChild("tickHz"))
 
-local S, thread, WFC, New, PhysicsFPS, PlayerFPS = Modules.Common.S, Modules.Common.thread, Modules.Common.WFC, Modules.Common.New, Modules.Common.PhysicsFPS, Modules.Common.PlayerFPS
+local S = Modules.Common.S
+local thread = Modules.Common.thread
+local WFC = Modules.Common.WFC
+local New = Modules.Common.New
+local PhysicsFPS = Modules.Common.PhysicsFPS
+local PlayerFPS = Modules.Common.PlayerFPS
+
+local Mover, FC, Pointer, debug_lookX, debug_lookY, debug_lookZ = Modules.Instances.Mover, Modules.Instances.FC, Modules.Instances.Pointer, Modules.Instances.debug_lookX, Modules.Instances.debug_lookX, Modules.Instances.debug_lookX
+
 local Players = S.Players
 local UIS = S.UserInputService
 
-local Mover, FC, Pointer = Modules.Instances.Mover, Modules.Instances.FC, Modules.Instances.Pointer
 local V3, CN, ANG, lookAt = Vector3.new, CFrame.new, CFrame.Angles, CFrame.lookAt
-local pi, clamp, abs = math.pi, math.clamp, math.abs
+local pi, clamp, abs, cos, sin = math.pi, math.clamp, math.abs, math.cos, math.sin
 
 local PhysicsFPS_Remote = PhysicsFPS()
 local PlayerFPS_Remote = PlayerFPS()
@@ -116,7 +123,7 @@ function Down.g()
 	print("hit indicators=",Hit_Indicators)
 end
 
-Down.q = Reset
+Down.t = Reset
 
 UIS.InputBegan:Connect(function(input, gp)
 	if not gp then
@@ -155,6 +162,20 @@ local Jumping = false
 local function m_2D_3DVector() --This is NOT suppose to be mouse.Target or react's to physics *yet* -09/04
 	local SPTR = cc:ScreenPointToRay(MouseHit_p.x,MouseHit_p.y,0)
 	return (SPTR.Origin+Mover.CFrame.LookVector+SPTR.Direction*(cc.CFrame.p-Mover.CFrame.p).Magnitude*2)
+end
+
+local function ComputeJump()
+	local goal = V3(0,JumpHeight/10,0)
+	for i = 1, 10 do
+		local sine_out = sin((i*pi)/2)
+		Mover.Position=Mover.Position:Lerp(Mover.Position+goal,sine_out)
+		Stepped.TickStep:Wait()
+	end
+	for i = 1, 10 do
+		local sine_in = 1-cos((i*pi)/2)
+		Mover.Position=Mover.Position:Lerp(Mover.Position-goal,sine_in)
+		Stepped.TickStep:Wait()
+	end
 end
 
 Stepped.TickStep:Connect(function(tdt,dt)
@@ -201,36 +222,32 @@ Stepped.TickStep:Connect(function(tdt,dt)
 			else
 				Mover.Position+=rv+z
 			end
-
 		else
 			FC.Position+=rv+z
 		end
 	end
 	if Hold.e then
-		if not Freecam then
-			Mover.Position+=V3(0,ys,0)
-		else
-			FC.Position+=V3(0,ys,0)
+		if not Ground then
+			if not Freecam then
+				Mover.Position+=V3(0,ys,0)
+			else
+				FC.Position+=V3(0,ys,0)
+			end
 		end
 	end
 	if Hold.q then
-		if not Freecam then
-			Mover.Position-=V3(0,ys,0)
-		else
-			FC.Position-=V3(0,ys,0)
+		if not Ground then
+			if not Freecam then
+				Mover.Position-=V3(0,ys,0)
+			else
+				FC.Position-=V3(0,ys,0)
+			end
 		end
 	end
 	if Hold.space then
 		if Ground and OnGround and not Jumping then
 			Jumping = true
-			for i = 1,JumpHeight do
-				Mover.Position+=V3(0,i/10,0)
-				task.wait()
-			end
-			for i = 1,JumpHeight do
-				Mover.Position-=V3(0,i/10,0)
-				task.wait()
-			end
+			ComputeJump()
 			Jumping = false
 		end
 	end
@@ -243,6 +260,14 @@ Stepped.TickStep:Connect(function(tdt,dt)
 			Mover.CFrame=lookAt(Mover.Position,Dir)
 		end
 	end
+	if Ground then
+
+	else
+		debug_lookX.Transparency = 1
+		debug_lookY.Transparency = 1
+		debug_lookZ.Transparency = 1
+	end
+
 	PlayerFPS_Remote:Fire(dt)
 end)
 
@@ -367,14 +392,11 @@ local function ComputePhysics(Object, Object_p, Mover_p, Object_Size)
 			--Velocity
 			OnGround = false
 			Mover.Position-=V3(0,.1,0)
-
+			
 		else
 			OnGround = true
 
 		end
-	end
-	if Mover_p.y<=workspace.FallenPartsDestroyHeight then
-		Reset()
 	end
 	if Hit_Indicators then
 		if HitColliders.inv_y[Object] then
@@ -415,6 +437,9 @@ Heartbeat.TickStep:Connect(function(tdt,dt)
 
 		if Prox then
 			ComputePhysics(Object, o_p, m_p, o_s)
+		end
+		if Mover_p.y<=workspace.FallenPartsDestroyHeight then
+			Reset()
 		end
 	end
 	PhysicsFPS_Remote:Fire(dt)
