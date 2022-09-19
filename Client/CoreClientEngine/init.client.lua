@@ -19,18 +19,23 @@ Modules.tickHz = require(script:WaitForChild("tickHz"))
 
 local S = Modules.Common.S
 local thread = Modules.Common.thread
-local WFC = Modules.Common.WFC
+local Critical_wait = Modules.Common.Critical_wait
 local New = Modules.Common.New
 local PhysicsFPS = Modules.Common.PhysicsFPS
 local PlayerFPS = Modules.Common.PlayerFPS
 
-local Mover, FC, Pointer, debug_lookX, debug_lookY, debug_lookZ = Modules.Instances.Mover, Modules.Instances.FC, Modules.Instances.Pointer, Modules.Instances.debug_lookX, Modules.Instances.debug_lookX, Modules.Instances.debug_lookX
+local Mover = Modules.Instances.Mover
+local FC = Modules.Instances.FC
+local Pointer = Modules.Instances.Pointer
+local debug_lookX = Modules.Instances.debug_lookX
+local debug_lookY = Modules.Instances.debug_lookY
+local debug_lookZ = Modules.Instances.debug_lookZ
 
 local Players = S.Players
 local UIS = S.UserInputService
 
 local V3, CN, ANG, lookAt = Vector3.new, CFrame.new, CFrame.Angles, CFrame.lookAt
-local pi, clamp, abs, cos, sin = math.pi, math.clamp, math.abs, math.cos, math.sin
+local pi, clamp, abs, cos, sin, floor = math.pi, math.clamp, math.abs, math.cos, math.sin, math.floor
 
 local PhysicsFPS_Remote = PhysicsFPS()
 local PlayerFPS_Remote = PlayerFPS()
@@ -48,7 +53,9 @@ set_CameraPOV(Mover)
 FC.Parent = cc
 
 --Init the workspace physics
-local PhysicsList_Remote = WFC(Shared, 'PhysicsList', 10, "Fetching PhysicsList Remote...", "Got the PhysicsList Remote.", "Failed to fetch the PhysicsList, The physics engine will not work!")
+--Critical dependency
+local PhysicsList_Remote = Critical_wait(Shared, 'PhysicsList', 10, "Fetching PhysicsList Remote...", "Got the PhysicsList Remote.", "Failed to fetch the PhysicsList, The physics engine will not work!")
+--
 local PhysicsList = {}
 local HitColliders = {
 	x={},y={},z={},
@@ -96,7 +103,7 @@ local OnGround = false
 local Hit_Indicators = true
 
 local function Reset()
-	Mover.Position=V3(0,100,0)
+	Mover.Position=Vector3.yAxis*1e4
 end
 
 function Down.f()
@@ -123,7 +130,7 @@ function Down.g()
 	print("hit indicators=",Hit_Indicators)
 end
 
-Down.t = Reset
+Down.y = Reset
 
 UIS.InputBegan:Connect(function(input, gp)
 	if not gp then
@@ -159,6 +166,20 @@ local ys = 1
 local JumpHeight = 20
 local Jumping = false
 
+local y_hit_level, inv_y_hit_level
+local x_hit_level, inv_x_hit_level
+local z_hit_level, inv_z_hit_level
+
+--Never recommend below 1 or else the hit detection will/can be to ~perfect~
+local StudSteps = 1
+local MaxGround_Detect = 100
+
+local Fall_velocity = 1e-3
+local Fall_velocity_level = 0
+local Fall_velocity_max = 5
+
+local CurrentTick_obj;
+
 local function m_2D_3DVector() --This is NOT suppose to be mouse.Target or react's to physics *yet* -09/04
 	local SPTR = cc:ScreenPointToRay(MouseHit_p.x,MouseHit_p.y,0)
 	return (SPTR.Origin+Mover.CFrame.LookVector+SPTR.Direction*(cc.CFrame.p-Mover.CFrame.p).Magnitude*2)
@@ -167,21 +188,33 @@ end
 local function ComputeJump()
 	local goal = V3(0,JumpHeight/10,0)
 	for i = 1, 10 do
-		local sine_out = sin((i*pi)/2)
-		Mover.Position=Mover.Position:Lerp(Mover.Position+goal,sine_out)
 		Stepped.TickStep:Wait()
+		Mover.Position=Mover.Position:Lerp(Mover.Position+goal,i/10)
 	end
 	for i = 1, 10 do
-		local sine_in = 1-cos((i*pi)/2)
-		Mover.Position=Mover.Position:Lerp(Mover.Position-goal,sine_in)
+		Mover.Position=Mover.Position:Lerp(Mover.Position-goal,i/10)
 		Stepped.TickStep:Wait()
+	end
+end
+
+local function ComputeFall_velocity(Mover_p)
+	if Ground and not Jumping then
+		local Ground_Detect = (y_hit_level+Mover_p).Unit+(CurrentTick_obj.Size/2)
+		local Ground_Unit = -((Ground_Detect-Mover_p).Unit.y*(Ground_Detect+Mover_p).Magnitude)
+		if Ground_Unit>=StudSteps then
+			OnGround = false
+			Mover.Position-=V3(0,.1+floor(Fall_velocity_max,Fall_velocity_level),0)
+			Fall_velocity_level+=Fall_velocity
+		else
+			OnGround = true
+			Fall_velocity_level=0
+		end
 	end
 end
 
 Stepped.TickStep:Connect(function(tdt,dt)
 	local lv, m_lv = cc.CFrame.LookVector, Mover.CFrame.LookVector
 	local rv, m_rv = cc.CFrame.RightVector, Mover.CFrame.RightVector
-
 	if Hold.w then
 		if not Freecam then
 			if Ground then
@@ -252,22 +285,32 @@ Stepped.TickStep:Connect(function(tdt,dt)
 		end
 	end
 
+	local Dir = m_2D_3DVector()
+	local Mover_cf = Mover.CFrame
 	if not Freecam then
-		local Dir = m_2D_3DVector()
-		Pointer.Position=Dir
+		Pointer.Position=Mover_cf.p
 		FC.Position=Mover.Position
 		if not Ground then
-			Mover.CFrame=lookAt(Mover.Position,Dir)
+			Mover.CFrame=lookAt(Mover.Position,Mover_cf.p)
 		end
 	end
 	if Ground then
+		debug_lookX.Transparency = 0
+		debug_lookY.Transparency = 0
+		debug_lookZ.Transparency = 0
 
+
+
+		debug_lookX.CFrame=CN(Mover_cf.LookVector)*Mover_cf*ANG(pi/2,0,0)
+		debug_lookY.CFrame=CN(Mover_cf.LookVector)*Mover_cf*ANG(0,pi/2,0)
+		debug_lookZ.CFrame=CN(Mover_cf.LookVector)*Mover_cf*ANG(0,0,pi/2)
 	else
 		debug_lookX.Transparency = 1
 		debug_lookY.Transparency = 1
 		debug_lookZ.Transparency = 1
 	end
 
+	ComputeFall_velocity(Mover_cf.p)
 	PlayerFPS_Remote:Fire(dt)
 end)
 
@@ -355,14 +398,10 @@ local function Hit_Detection_Back(Object, pos_i, Origin)
 	return Hit
 end
 
---Never recommend below 1 or else the hit detection will/can be to ~perfect~
-local StudSteps = 1
-local MaxGround_Detect = 100
-
 local function ComputePhysics(Object, Object_p, Mover_p, Object_Size)
-	local y_hit_level, inv_y_hit_level = Hit_Detection_Top(Object, -Mover_p, Object_p), Hit_Detection_Bottom(Object, -Mover_p, Object_p)
-	local x_hit_level, inv_x_hit_level = Hit_Detection_Left(Object, -Mover_p, Object_p), Hit_Detection_Right(Object, -Mover_p, Object_p)
-	local z_hit_level, inv_z_hit_level = Hit_Detection_Front(Object, -Mover_p, Object_p), Hit_Detection_Back(Object, -Mover_p, Object_p)
+	y_hit_level, inv_y_hit_level = Hit_Detection_Top(Object, -Mover_p, Object_p), Hit_Detection_Bottom(Object, -Mover_p, Object_p)
+	x_hit_level, inv_x_hit_level = Hit_Detection_Left(Object, -Mover_p, Object_p), Hit_Detection_Right(Object, -Mover_p, Object_p)
+	z_hit_level, inv_z_hit_level = Hit_Detection_Front(Object, -Mover_p, Object_p), Hit_Detection_Back(Object, -Mover_p, Object_p)
 	
 	--Come up with a formula to get MinN-MaxN sizes for magnitude and angles of the mover
 	if (Mover_p-y_hit_level).Magnitude<=StudSteps then
@@ -385,19 +424,6 @@ local function ComputePhysics(Object, Object_p, Mover_p, Object_Size)
 		Mover.Position=V3(Mover_p.x,Mover_p.y,inv_z_hit_level.z-Mover.Size.z/2)
 	end
 
-	if Ground and not Jumping then
-		local Ground_Detect = (y_hit_level+Mover_p).Unit+(Object_Size/2)
-		local Ground_Unit = -((Ground_Detect-Mover_p).Unit.y*(Ground_Detect+Mover_p).Magnitude)
-		if Ground_Unit>=StudSteps then
-			--Velocity
-			OnGround = false
-			Mover.Position-=V3(0,.1,0)
-			
-		else
-			OnGround = true
-
-		end
-	end
 	if Hit_Indicators then
 		if HitColliders.inv_y[Object] then
 			HitColliders.inv_y[Object].Position = inv_y_hit_level
@@ -426,19 +452,19 @@ Heartbeat.TickStep:Connect(function(tdt,dt)
 		PhysicsList = PhysicsList_Remote:InvokeServer()
 	end)
 	for i = 1, #PhysicsList do
-		local Object = PhysicsList[i]
-		local o_s, m_p, o_p = Object.Size, Mover.Position, Object.Position
+		CurrentTick_obj = PhysicsList[i]
+		local o_s, m_p, o_p = CurrentTick_obj.Size, Mover.Position, CurrentTick_obj.Position
 		--This still needs a proper system
 		local Prox = o_s.y/2<m_p.y/2 or o_s.x/-2<m_p.x/-2 or o_s.z/2<m_p.z/2
 
-		if Object.Name == "Baseplate" then
-			--print("Object=",o_s.y,"Mover=",m_p.y/2)
+		if CurrentTick_obj.Name == "Baseplate" then
+			--print("CurrentTick_obj=",o_s.y,"Mover=",m_p.y/2)
 		end
 
 		if Prox then
-			ComputePhysics(Object, o_p, m_p, o_s)
+			ComputePhysics(CurrentTick_obj, o_p, m_p, o_s)
 		end
-		if Mover_p.y<=workspace.FallenPartsDestroyHeight then
+		if m_p.y<=workspace.FallenPartsDestroyHeight then
 			Reset()
 		end
 	end

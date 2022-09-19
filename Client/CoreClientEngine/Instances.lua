@@ -24,21 +24,21 @@ Pointer = New('Part', workspace, {
     Anchored = true
 })
 debug_lookX = New('Part', workspace, {
-    Size = Vector3.new(1,3,1),
+    Size = Vector3.new(.1,.7,.1),
     Color = Color3.new(1,0,0),
     CanCollide = false,
     Anchored = true,
     Transparency = 1
 })
 debug_lookY = New('Part', workspace, {
-    Size = Vector3.new(1,3,1),
+    Size = Vector3.new(.1,.7,.1),
     Color = Color3.new(0,1,0),
     CanCollide = false,
     Anchored = true,
     Transparency = 1
 })
 debug_lookZ = New('Part', workspace, {
-    Size = Vector3.new(1,3,1),
+    Size = Vector3.new(.1,.7,.1),
     Color = Color3.new(0,0,1),
     CanCollide = false,
     Anchored = true,
