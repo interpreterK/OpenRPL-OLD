@@ -67,7 +67,7 @@ Vars.Remove = function(Inst)
 end
 
 --Use for important instances and locations
-Vars.WFC = function(Parent, Name, Timeout, pt_MSG, gp_MSG, nil_MSG)
+Vars.Critical_wait = function(Parent, Name, Timeout, pt_MSG, gp_MSG, nil_MSG)
 	if pt_MSG then
 		print(pt_MSG)
 	end
