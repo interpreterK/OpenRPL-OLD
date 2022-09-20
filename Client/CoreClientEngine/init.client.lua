@@ -3,7 +3,9 @@ if not game:IsLoaded() then
 end
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Modules = {
-	Common = require(Shared:WaitForChild("Common"))
+	Common = require(Shared:WaitForChild("Common")),
+	Collision = require(script:WaitForChild("Collision")),
+	Velocity = require(script:WaitForChild("Velocity"))
 }
 _G.__phys_modules__ = setmetatable(Modules, {
 	__index = function(self,i)
@@ -103,7 +105,7 @@ local OnGround = false
 local Hit_Indicators = true
 
 local function Reset()
-	Mover.Position=Vector3.yAxis*1e4
+	Mover.Position=Vector3.yAxis*300
 end
 
 function Down.f()
@@ -166,10 +168,6 @@ local ys = 1
 local JumpHeight = 20
 local Jumping = false
 
-local y_hit_level, inv_y_hit_level
-local x_hit_level, inv_x_hit_level
-local z_hit_level, inv_z_hit_level
-
 --Never recommend below 1 or else the hit detection will/can be to ~perfect~
 local StudSteps = 1
 local MaxGround_Detect = 100
@@ -177,8 +175,6 @@ local MaxGround_Detect = 100
 local Fall_velocity = 1e-3
 local Fall_velocity_level = 0
 local Fall_velocity_max = 5
-
-local CurrentTick_obj;
 
 local function m_2D_3DVector() --This is NOT suppose to be mouse.Target or react's to physics *yet* -09/04
 	local SPTR = cc:ScreenPointToRay(MouseHit_p.x,MouseHit_p.y,0)
@@ -194,21 +190,6 @@ local function ComputeJump()
 	for i = 1, 10 do
 		Mover.Position=Mover.Position:Lerp(Mover.Position-goal,i/10)
 		Stepped.TickStep:Wait()
-	end
-end
-
-local function ComputeFall_velocity(Mover_p)
-	if Ground and not Jumping then
-		local Ground_Detect = (y_hit_level+Mover_p).Unit+(CurrentTick_obj.Size/2)
-		local Ground_Unit = -((Ground_Detect-Mover_p).Unit.y*(Ground_Detect+Mover_p).Magnitude)
-		if Ground_Unit>=StudSteps then
-			OnGround = false
-			Mover.Position-=V3(0,.1+floor(Fall_velocity_max,Fall_velocity_level),0)
-			Fall_velocity_level+=Fall_velocity
-		else
-			OnGround = true
-			Fall_velocity_level=0
-		end
 	end
 end
 
@@ -310,118 +291,49 @@ Stepped.TickStep:Connect(function(tdt,dt)
 		debug_lookZ.Transparency = 1
 	end
 
-	ComputeFall_velocity(Mover_cf.p)
 	PlayerFPS_Remote:Fire(dt)
 end)
 
-local function Hit_Detection_Top(Object, pos_i, Origin)
-	local Hit = Vector3.zero
-	pcall(function()
-		local Top = Object.CFrame*CN(0,Object.Size.y/2,0)
-		local point = pos_i+Top.p
-		local abs_size_X = abs(Object.Size.x/2)
-		local abs_size_Z = abs(Object.Size.z/2)
-		local max_sX = clamp(-abs_size_X,-point.x,abs_size_X)
-		local max_sZ = clamp(-abs_size_Z,-point.z,abs_size_Z)
-		Hit = V3(Origin.x+max_sX,Top.p.y,Origin.z+max_sZ)
-	end)
-	return Hit
+local function ComputeFall_velocity(Object, Mover_p, y_hit_level)
+	if Ground and not Jumping then
+		local Ground_Detect = (y_hit_level+Mover_p).Unit+(Object.Size/2)
+		local Ground_Unit = -((Ground_Detect-Mover_p).Unit.y*(Ground_Detect+Mover_p).Magnitude)
+		if Ground_Unit>=StudSteps then
+			OnGround = false
+			Mover.Position-=V3(0,.1+Fall_velocity_level,0)
+			Fall_velocity_level+=Fall_velocity
+		else
+			OnGround = true
+			Fall_velocity_level=0
+		end
+	end
 end
 
-local function Hit_Detection_Bottom(Object, pos_i, Origin)
-	local Hit = Vector3.zero
-	pcall(function()
-		local Bottom = Object.CFrame*CN(0,Object.Size.y/-2,0)
-		local point = pos_i+Bottom.p
-		local abs_size_X = abs(Object.Size.x/-2)
-		local abs_size_Z = abs(Object.Size.z/-2)
-		local max_sX = clamp(-abs_size_X,-point.x,abs_size_X)
-		local max_sZ = clamp(-abs_size_Z,-point.z,abs_size_Z)
-		Hit = V3(Origin.x+max_sX,Bottom.p.y,Origin.z+max_sZ)
-	end)
-	return Hit
-end
-
-local function Hit_Detection_Left(Object, pos_i, Origin)
-	local Hit = Vector3.zero
-	pcall(function()
-		local Left = Object.CFrame*CN(Object.Size.x/-2,0,0)
-		local point = pos_i+Left.p
-		local abs_size_Y = abs(Object.Size.y/-2)
-		local abs_size_Z = abs(Object.Size.z/-2)
-		local max_sY = clamp(-abs_size_Y,-point.y,abs_size_Y)
-		local max_sZ = clamp(-abs_size_Z,-point.z,abs_size_Z)
-		Hit = V3(Left.p.x,Origin.y+max_sY,Origin.z+max_sZ)
-	end)
-	return Hit
-end
-
-local function Hit_Detection_Right(Object, pos_i, Origin)
-	local Hit = Vector3.zero
-	pcall(function()
-		local Right = Object.CFrame*CN(Object.Size.x/2,0,0)
-		local point = pos_i+Right.p
-		local abs_size_Y = abs(Object.Size.y/2)
-		local abs_size_Z = abs(Object.Size.z/2)
-		local max_sY = clamp(-abs_size_Y,-point.y,abs_size_Y)
-		local max_sZ = clamp(-abs_size_Z,-point.z,abs_size_Z)
-		Hit = V3(Right.p.x,Origin.y+max_sY,Origin.z+max_sZ)
-	end)
-	return Hit
-end
-
-local function Hit_Detection_Front(Object, pos_i, Origin)
-	local Hit = Vector3.zero
-	pcall(function()
-		local Front = Object.CFrame*CN(0,0,Object.Size.z/2)
-		local point = pos_i+Front.p
-		local abs_size_Y = abs(Object.Size.y/2)
-		local abs_size_X = abs(Object.Size.x/2)
-		local max_sY = clamp(-abs_size_Y,-point.y,abs_size_Y)
-		local max_sX = clamp(-abs_size_X,-point.x,abs_size_X)
-		Hit = V3(Origin.x+max_sX,Origin.y+max_sY,Front.p.z)
-	end)
-	return Hit
-end
-
-local function Hit_Detection_Back(Object, pos_i, Origin)
-	local Hit = Vector3.zero
-	pcall(function()
-		local Back = Object.CFrame*CN(0,0,Object.Size.z/-2)
-		local point = pos_i+Back.p
-		local abs_size_Y = abs(Object.Size.y/-2)
-		local abs_size_X = abs(Object.Size.x/-2)
-		local max_sY = clamp(-abs_size_Y,-point.y,abs_size_Y)
-		local max_sX = clamp(-abs_size_X,-point.x,abs_size_X)
-		Hit = V3(Origin.x+max_sX,Origin.y+max_sY,Back.p.z)
-	end)
-	return Hit
-end
-
-local function ComputePhysics(Object, Object_p, Mover_p, Object_Size)
-	y_hit_level, inv_y_hit_level = Hit_Detection_Top(Object, -Mover_p, Object_p), Hit_Detection_Bottom(Object, -Mover_p, Object_p)
-	x_hit_level, inv_x_hit_level = Hit_Detection_Left(Object, -Mover_p, Object_p), Hit_Detection_Right(Object, -Mover_p, Object_p)
-	z_hit_level, inv_z_hit_level = Hit_Detection_Front(Object, -Mover_p, Object_p), Hit_Detection_Back(Object, -Mover_p, Object_p)
+local function ComputePhysics(Object, Mover_p)
+	local Collision_data = Modules.Collision.new_block(Object, Mover)
+	local Sides = Collision_data:AllSides()
 	
+	ComputeFall_velocity(Object, Mover_p, y_hit_level)
+
 	--Come up with a formula to get MinN-MaxN sizes for magnitude and angles of the mover
-	if (Mover_p-y_hit_level).Magnitude<=StudSteps then
-		Mover.Position=V3(Mover_p.x,y_hit_level.y+Mover.Size.y/2,Mover_p.z)
+	if (Mover_p-Sides.Top).Magnitude<=StudSteps then
+		Mover.Position=V3(Mover_p.x,Sides.Top.y+Mover.Size.y/2,Mover_p.z)
 	end
-	if (Mover_p-x_hit_level).Magnitude<=StudSteps then
-		Mover.Position=V3(x_hit_level.x+Mover.Size.x/-2,Mover_p.y,Mover.Position.z)
+	if (Mover_p-Sides.Left).Magnitude<=StudSteps then
+		Mover.Position=V3(Sides.Left.x+Mover.Size.x/-2,Mover_p.y,Mover.Position.z)
 	end
-	if (Mover_p-z_hit_level).Magnitude<=StudSteps then
-		Mover.Position=V3(Mover_p.x,Mover_p.y,z_hit_level.z+Mover.Size.z/2)
+	if (Mover_p-Sides.Front).Magnitude<=StudSteps then
+		Mover.Position=V3(Mover_p.x,Mover_p.y,Sides.Front.z+Mover.Size.z/2)
 	end
 	
-	if (Mover_p-inv_y_hit_level).Magnitude<=StudSteps then
-		Mover.Position=V3(Mover_p.x,inv_y_hit_level.y-Mover.Size.y/2,Mover_p.z)
+	if (Mover_p-Sides.Bottom).Magnitude<=StudSteps then
+		Mover.Position=V3(Mover_p.x,Sides.Bottom.y-Mover.Size.y/2,Mover_p.z)
 	end
-	if (Mover_p-inv_x_hit_level).Magnitude<=StudSteps then
-		Mover.Position=V3(inv_x_hit_level.x-Mover.Size.x/-2,Mover_p.y,Mover_p.z)
+	if (Mover_p-Sides.Right).Magnitude<=StudSteps then
+		Mover.Position=V3(Sides.Right.x-Mover.Size.x/-2,Mover_p.y,Mover_p.z)
 	end
-	if (Mover_p-inv_z_hit_level).Magnitude<=StudSteps then
-		Mover.Position=V3(Mover_p.x,Mover_p.y,inv_z_hit_level.z-Mover.Size.z/2)
+	if (Mover_p-Sides.Back).Magnitude<=StudSteps then
+		Mover.Position=V3(Mover_p.x,Mover_p.y,Sides.Back.z-Mover.Size.z/2)
 	end
 
 	if Hit_Indicators then
@@ -452,17 +364,17 @@ Heartbeat.TickStep:Connect(function(tdt,dt)
 		PhysicsList = PhysicsList_Remote:InvokeServer()
 	end)
 	for i = 1, #PhysicsList do
-		CurrentTick_obj = PhysicsList[i]
-		local o_s, m_p, o_p = CurrentTick_obj.Size, Mover.Position, CurrentTick_obj.Position
+		local Object = PhysicsList[i]
+		local o_s, m_p = Object.Size, Mover.Position
 		--This still needs a proper system
 		local Prox = o_s.y/2<m_p.y/2 or o_s.x/-2<m_p.x/-2 or o_s.z/2<m_p.z/2
 
-		if CurrentTick_obj.Name == "Baseplate" then
-			--print("CurrentTick_obj=",o_s.y,"Mover=",m_p.y/2)
+		if Object.Name == "Baseplate" then
+			--print("Object=",o_s.y,"Mover=",m_p.y/2)
 		end
 
 		if Prox then
-			ComputePhysics(CurrentTick_obj, o_p, m_p, o_s)
+			ComputePhysics(Object, o_p)
 		end
 		if m_p.y<=workspace.FallenPartsDestroyHeight then
 			Reset()
