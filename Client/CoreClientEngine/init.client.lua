@@ -1,189 +1,205 @@
+--[[
+	A custom physics engine for ROBLOX.
+	
+	Author: interpreterK
+	Open Source Code: https://github.com/interpreterK/PhysicsEngine
+]]
+
 if not game:IsLoaded() then
 	game.Loaded:Wait()
 end
+
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Modules = {
-	Common = require(Shared:WaitForChild("Common")),
+	Common    = require(Shared:WaitForChild("Common")),
 	Collision = require(script:WaitForChild("Collision")),
-	Velocity = require(script:WaitForChild("Velocity")),
-	Movement = require(script:WaitForChild("Movement"))
+	Velocity  = require(script:WaitForChild("Velocity")),
+	Movement  = require(script:WaitForChild("Movement"))
 }
 _G.__phys_modules__ = setmetatable(Modules, {
+	__metatable = nil,
 	__index = function(self,i)
 		local fenv = getfenv(2)
 		if fenv.script and fenv.script:IsDescendantOf(script) then
 			return rawget(self,i)
 		end
-	end,
-	__metatable = nil
+	end
 })
+--Any SCRIPT that utilizes _G.__phys_modules__ must NOT be pre-loaded into "Modules"
 Modules.Instances = require(script:WaitForChild("Instances"))
-Modules.tickHz = require(script:WaitForChild("tickHz"))
+Modules.tickHz    = require(script:WaitForChild("tickHz"))
+Modules.Controls  = require(script:WaitForChild("Controls"))
 
-local S = Modules.Common.S
-local thread = Modules.Common.thread
+local S             = Modules.Common.S
+local thread        = Modules.Common.thread
 local Critical_wait = Modules.Common.Critical_wait
-local New = Modules.Common.New
-local PhysicsFPS = Modules.Common.PhysicsFPS
-local PlayerFPS = Modules.Common.PlayerFPS
+local New           = Modules.Common.New
+local PhysicsFPS    = Modules.Common.PhysicsFPS
+local PlayerFPS     = Modules.Common.PlayerFPS
 
-local Mover = Modules.Instances.Mover
-local FC = Modules.Instances.FC
-local Pointer = Modules.Instances.Pointer
+local Mover       = Modules.Instances.Mover
+local Freecam_Obj = Modules.Instances.Freecam
+local Pointer     = Modules.Instances.Pointer
 local debug_lookX = Modules.Instances.debug_lookX
 local debug_lookY = Modules.Instances.debug_lookY
 local debug_lookZ = Modules.Instances.debug_lookZ
 
 local Players = S.Players
-local UIS = S.UserInputService
 
 local V3, CN, ANG, lookAt = Vector3.new, CFrame.new, CFrame.Angles, CFrame.lookAt
-local pi, clamp, abs, cos, sin, floor = math.pi, math.clamp, math.abs, math.cos, math.sin, math.floor
+local pi = math.pi
+local Freecam = false
+local Ground  = false
+
+local LocalPlayer = Players.LocalPlayer or Players.PlayerAdded:Wait()
+local Default_Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+
+local CurrentCamera = workspace.CurrentCamera
 
 local PhysicsFPS_Remote = PhysicsFPS()
 local PlayerFPS_Remote = PlayerFPS()
 
---Remove the default character
-local cc = workspace.CurrentCamera
-local function set_CameraPOV(BasePart)
-	cc.CameraSubject = BasePart
-	cc.CameraType = Enum.CameraType.Custom
+local function Camera_POV(CurrentCamera, Subject)
+	CurrentCamera.CameraSubject = Subject
+	CurrentCamera.CameraType = Enum.CameraType.Custom
 end
-local LocalPlayer = Players.LocalPlayer or Players.PlayerAdded:Wait()
-local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-char:Destroy()
-set_CameraPOV(Mover)
-FC.Parent = cc
+
+local function NoCharacter(Subject, Current_Character)
+	CurrentCamera = workspace.CurrentCamera
+	Current_Character:Destroy()
+	Freecam_Obj.Parent = CurrentCamera
+
+	Camera_POV(CurrentCamera, Subject)
+end
+
+--Remove the default character
+NoCharacter(Mover, Default_Character)
+LocalPlayer.CharacterAdded:Connect(function(character)
+	NoCharacter(Mover, character)
+end)
 
 --Init the workspace physics
 --Critical dependency
 local PhysicsList_Remote = Critical_wait(Shared, 'PhysicsList', 10, "Fetching PhysicsList Remote...", "Got the PhysicsList Remote.", "Failed to fetch the PhysicsList, The physics engine will not work!")
---
 local PhysicsList = {}
+--
 local HitColliders = {
-	x={},y={},z={},
-	inv_x={},inv_y={},inv_z={}
+	x = {}, y = {}, z = {},
+	inv_x = {}, inv_y = {}, inv_z = {}
 }
 local function Visual_HitCollisions(Type, Obj, Color, Side, Ang)
 	HitColliders[Type][Obj] = New('Part', workspace, {
-		Name='physics hit',
-		Anchored=true,
-		Size=V3(2,.1,2),
-		Color=Color,
-		Transparency=.5,
-		Position=Obj.CFrame*Side,
-		CFrame=Ang or CN()
+		Name         = 'physics hit',
+		Anchored     = true,
+		Size         = V3(2,.1,2),
+		Color        = Color,
+		Transparency = .5,
+		Position     = Obj.CFrame*Side,
+		CFrame       = Ang or CN()
 	})
 end
 local function HitCollisions_Visibility(value)
-	local tobool = value and .5 or 1
-	for _,v in next, HitColliders.x do
-		v.Transparency = tobool
-	end
-	for _,v in next, HitColliders.y do
-		v.Transparency = tobool
-	end
-	for _,v in next, HitColliders.z do
-		v.Transparency = tobool
-	end
-	for _,v in next, HitColliders.inv_x do
-		v.Transparency = tobool
-	end
-	for _,v in next, HitColliders.inv_y do
-		v.Transparency = tobool
-	end
-	for _,v in next, HitColliders.inv_z do
-		v.Transparency = tobool
+	local tobool = value and (.5 or 1)
+	local FAT_table = {
+		unpack(HitColliders.x), unpack(HitColliders.inv_x),
+		unpack(HitColliders.y), unpack(HitColliders.inv_y),
+		unpack(HitColliders.z), unpack(HitColliders.inv_z)
+	}
+	
+	for i = 1, #FAT_table do
+		FAT_table[i].Transparency = tobool
 	end
 end
 
+local OnGround            = false
+local Hit_Indicators      = true
+local JumpHeight          = 20
+local Jumping             = false
+local StudSteps           = 1 --Never recommend below 1 or else the hit detection will/can be to perfect
+local MaxGround_Detect    = 100
+local Fall_velocity       = 1e-3
+local Fall_velocity_level = 0
+local Fall_velocity_max   = 5
+local MouseHit_p          = Vector3.zero
+
+--Init custom classes
+local Movement = Modules.Movement.new(Mover)
+--Step info
+--https://devforum-uploads.s3.dualstack.us-east-2.amazonaws.com/uploads/original/4X/0/b/6/0b6fde38a15dd528063a92ac8916ce3cd84fc1ce.png
+local Heartbeat = Modules.tickHz.new(0, "Heartbeat")
+local Stepped = Modules.tickHz.new(60, "Stepped")
 --Controls
-local Hold, Down, Up = {}, {}, {}
-local MouseHit_p = Vector3.zero
-local Freecam = false
-local Ground = false
-local OnGround = false
-local Hit_Indicators = true
+local Bind_Map = {
+	KeyDown = {
+		f = {gameProcessed = false},
+		r = {gameProcessed = false},
+		t = {gameProcessed = false},
+		g = {gameProcessed = false},
+		y = {gameProcessed = false},
+		h = {gameProcessed = false}
+	},
+	KeyUp = {}
+}
+local KeyHolding = {}
+local Controls = Modules.Controls.new(Bind_Map)
+--
 
-local function Reset()
-	Mover.Position=Vector3.yAxis*100
+local function NewBind_KeyDown(Key, Callback_Function)
+	Bind_Map.KeyDown[Key].Callback = Callback_Function
+end
+local function NewBind_KeyUp(Key, Callback_Function)
+	Bind_Map.KeyUp[Key].Callback = Callback_Function
 end
 
-function Down.f()
+NewBind_KeyDown('f', function()
 	Freecam = not Freecam
 	if Freecam then
-		set_CameraPOV(FC)
+		Movement = Modules.Movement.new(Freecam_Obj, workspace.CurrentCamera)
+		Camera_POV(workspace.CurrentCamera, Freecam_Obj)
 	else
-		set_CameraPOV(Mover)
+		Movement = Modules.Movement.new(Mover)
+		Camera_POV(workspace.CurrentCamera, Mover)
 	end
-	print("freecam=",Freecam)
-end
-function Down.r()
+	print('Freecam=', Freecam)
+end)
+
+NewBind_KeyDown('h', function()
 	Ground = not Ground
-	Mover.Orientation=Vector3.zero
-	print("Ground=",Ground)
-end
-function Down.t()
-	print(PhysicsList)
-	warn("Printed the PhysicsList.")
-end
-function Down.g()
+	Mover.Orientation = Vector3.zero
+	print('Ground=', Ground)
+end)
+
+NewBind_KeyDown('g', function()
 	Hit_Indicators = not Hit_Indicators
 	HitCollisions_Visibility(Hit_Indicators)
-	print("hit indicators=",Hit_Indicators)
+	print("Hit indicators=", Hit_Indicators)
+end)
+
+local function Reset()
+	Mover.Position = Vector3.yAxis*100
 end
+NewBind_KeyDown('r', Reset)
 
-Down.y = Reset
-
-UIS.InputBegan:Connect(function(input, gp)
-	if not gp then
-		local i = input.KeyCode.Name:lower()
-		Hold[i] = true
-		if Down[i] then
-			Down[i]()
-		end
+--Init the control system
+Controls.KeyPressing:Connect(function(KeyName, HeldDown, gameProcessed)
+	if not gameProcessed then
+		KeyHolding[KeyName] = HeldDown
 	end
 end)
-UIS.InputEnded:Connect(function(input, gp)
-	if not gp then
-		local i = input.KeyCode.Name:lower()
-		Hold[i] = false
-		if Up[i] then
-			Up[i]()
-		end
-	end
-end)
-UIS.InputChanged:Connect(function(input, _)
+
+Controls.InputChanging:Connect(function(input, gameProcessed)
 	if input.UserInputType == Enum.UserInputType.MouseMovement then
 		MouseHit_p = input.Position
 	end
 end)
 
---Step info
---https://devforum-uploads.s3.dualstack.us-east-2.amazonaws.com/uploads/original/4X/0/b/6/0b6fde38a15dd528063a92ac8916ce3cd84fc1ce.png
-local Heartbeat = Modules.tickHz.new(0, "Heartbeat")
-local Stepped = Modules.tickHz.new(60, "Stepped")
-
-local z = Vector3.zAxis/10
-local ys = 1
-local JumpHeight = 20
-local Jumping = false
-
---Never recommend below 1 or else the hit detection will/can be to perfect
-local StudSteps = 1
-local MaxGround_Detect = 100
-
-local Fall_velocity = 1e-3
-local Fall_velocity_level = 0
-local Fall_velocity_max = 5
-
 local function m_2D_3DVector() --This is NOT suppose to be mouse.Target or react's to physics *yet* -09/04
-	local SPTR = cc:ScreenPointToRay(MouseHit_p.x,MouseHit_p.y,0)
-	return (SPTR.Origin+Mover.CFrame.LookVector+SPTR.Direction*(cc.CFrame.p-Mover.CFrame.p).Magnitude*2)
+	local SPTR = CurrentCamera:ScreenPointToRay(MouseHit_p.x,MouseHit_p.y,0)
+	return (SPTR.Origin+Mover.CFrame.LookVector+SPTR.Direction*(CurrentCamera.CFrame.p-Mover.CFrame.p).Magnitude*2)
 end
 
 local function ComputeJump()
-	local goal = Vector3.yAxis+JumpHeight/10
+	local goal = V3(0,JumpHeight,0)/10
 	for i = 1, 10 do
 		Stepped.TickStep:Wait()
 		Mover.Position=Mover.Position:Lerp(Mover.Position+goal,i/10)
@@ -195,72 +211,30 @@ local function ComputeJump()
 end
 
 Stepped.TickStep:Connect(function(tdt,dt)
-	local lv, m_lv = cc.CFrame.LookVector, Mover.CFrame.LookVector
-	local rv, m_rv = cc.CFrame.RightVector, Mover.CFrame.RightVector
-	if Hold.w then
-		if not Freecam then
-			if Ground then
-				Mover.Position+=m_lv+z
-			else
-				Mover.Position+=lv+z
-			end
-		else
-			FC.Position+=lv+z
-		end
-		
+	if KeyHolding.w then
+		Movement:Forward()
 	end
-	if Hold.s then
-		if not Freecam then
-			if Ground then
-				Mover.Position-=m_lv+z
-			else
-				Mover.Position-=lv+z
-			end
-		else
-			FC.Position-=lv+z
-		end
+	if KeyHolding.a then
+		Movement:Left()
 	end
-	if Hold.a then
-		if not Freecam then
-			if Ground then
-				Mover.Position-=m_rv+z
-			else
-				Mover.Position-=rv+z
-			end
-		else
-			FC.Position-=rv+z
-		end
+	if KeyHolding.s then
+		Movement:Back()
 	end
-	if Hold.d then
-		if not Freecam then
-			if Ground then
-				Mover.Position+=m_rv+z
-			else
-				Mover.Position+=rv+z
-			end
-		else
-			FC.Position+=rv+z
-		end
+	if KeyHolding.d then
+		Movement:Right()
 	end
-	if Hold.e then
+	if KeyHolding.e then
 		if not Ground then
-			if not Freecam then
-				Mover.Position+=V3(0,ys,0)
-			else
-				FC.Position+=V3(0,ys,0)
-			end
+			Movement:Up()
 		end
 	end
-	if Hold.q then
+	if KeyHolding.q then
 		if not Ground then
-			if not Freecam then
-				Mover.Position-=V3(0,ys,0)
-			else
-				FC.Position-=V3(0,ys,0)
-			end
+			Movement:Down()
 		end
 	end
-	if Hold.space then
+
+	if KeyHolding.space then
 		if Ground and OnGround and not Jumping then
 			Jumping = true
 			ComputeJump()
@@ -272,9 +246,9 @@ Stepped.TickStep:Connect(function(tdt,dt)
 	local Mover_cf = Mover.CFrame
 	if not Freecam then
 		Pointer.Position=Mover_cf.p
-		FC.Position=Mover.Position
+		Freecam_Obj.Position=Mover.Position
 		if not Ground then
-			Mover.CFrame=lookAt(Mover.Position,Mover_cf.p)
+			Mover.CFrame=lookAt(Mover.Position,Dir)
 		end
 	end
 	if Ground then
@@ -316,7 +290,7 @@ local function ComputePhysics(Object, Mover_p)
 	local Collision_data = Modules.Collision.new_block(Object, Mover)
 	local Sides = Collision_data:AllSides()
 
-	ComputeFall_velocity(Object, Mover_p, y_hit_level)
+	ComputeFall_velocity(Object, Mover_p, Sides.Top)
 
 	--Come up with a formula to get MinN-MaxN sizes for magnitude and angles of the mover
 	if (Mover_p-Sides.Top).Magnitude<=StudSteps then
@@ -341,22 +315,22 @@ local function ComputePhysics(Object, Mover_p)
 
 	if Hit_Indicators then
 		if HitColliders.inv_y[Object] then
-			HitColliders.inv_y[Object].Position = inv_y_hit_level
+			HitColliders.inv_y[Object].Position = Sides.Bottom
 		end
 		if HitColliders.y[Object] then
-			HitColliders.y[Object].Position = y_hit_level
+			HitColliders.y[Object].Position = Sides.Top
 		end
 		if HitColliders.x[Object] then
-			HitColliders.x[Object].Position = x_hit_level
+			HitColliders.x[Object].Position = Sides.Left
 		end
 		if HitColliders.inv_x[Object] then
-			HitColliders.inv_x[Object].Position = inv_x_hit_level
+			HitColliders.inv_x[Object].Position = Sides.Right
 		end
 		if HitColliders.z[Object] then
-			HitColliders.z[Object].Position = z_hit_level
+			HitColliders.z[Object].Position = Sides.Front
 		end
 		if HitColliders.inv_z[Object] then
-			HitColliders.inv_z[Object].Position = inv_z_hit_level
+			HitColliders.inv_z[Object].Position = Sides.Back
 		end
 	end
 end

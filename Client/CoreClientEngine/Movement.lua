@@ -4,23 +4,40 @@ local Movement = {
 }
 Movement.__index = Movement
 
-function Movement.new(Mover)
-	return setmetatable({
-		Mover = Mover
-	}, Movement)
+function Movement.new(Mover, Alt)
+	local self = {}
+	self.Mover = Mover
+	self.Alt   = Alt
+	return setmetatable(self, Movement)
 end
 
 function Movement:Forward()
-	self.Mover.Position+=self.Mover.CFrame.LookVector+self.Z
+	local dir = self.Mover.CFrame.LookVector
+	if self.Alt then
+		dir = self.Alt.CFrame.LookVector
+	end
+	self.Mover.Position+=dir+self.Z
 end
 function Movement:Back()
-	self.Mover.Position-=self.Mover.CFrame.LookVector+self.Z
+	local dir = self.Mover.CFrame.LookVector
+	if self.Alt then
+		dir = self.Alt.CFrame.LookVector
+	end
+	self.Mover.Position-=dir+self.Z
 end
 function Movement:Right()
-	self.Mover.Position+=self.Mover.CFrame.RightVector+self.Z
+	local dir = self.Mover.CFrame.RightVector
+	if self.Alt then
+		dir = self.Alt.CFrame.RightVector
+	end
+	self.Mover.Position+=dir+self.Z
 end
 function Movement:Left()
-	self.Mover.Position-=self.Mover.CFrame.RightVector+self.Z
+	local dir = self.Mover.CFrame.RightVector
+	if self.Alt then
+		dir = self.Alt.CFrame.RightVector
+	end
+	self.Mover.Position-=dir+self.Z
 end
 function Movement:Up()
 	self.Mover.Position+=self.Y
