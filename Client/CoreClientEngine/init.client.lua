@@ -5,7 +5,8 @@ local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Modules = {
 	Common = require(Shared:WaitForChild("Common")),
 	Collision = require(script:WaitForChild("Collision")),
-	Velocity = require(script:WaitForChild("Velocity"))
+	Velocity = require(script:WaitForChild("Velocity")),
+	Movement = require(script:WaitForChild("Movement"))
 }
 _G.__phys_modules__ = setmetatable(Modules, {
 	__index = function(self,i)
@@ -105,7 +106,7 @@ local OnGround = false
 local Hit_Indicators = true
 
 local function Reset()
-	Mover.Position=Vector3.yAxis*300
+	Mover.Position=Vector3.yAxis*100
 end
 
 function Down.f()
@@ -168,7 +169,7 @@ local ys = 1
 local JumpHeight = 20
 local Jumping = false
 
---Never recommend below 1 or else the hit detection will/can be to ~perfect~
+--Never recommend below 1 or else the hit detection will/can be to perfect
 local StudSteps = 1
 local MaxGround_Detect = 100
 
@@ -182,7 +183,7 @@ local function m_2D_3DVector() --This is NOT suppose to be mouse.Target or react
 end
 
 local function ComputeJump()
-	local goal = V3(0,JumpHeight/10,0)
+	local goal = Vector3.yAxis+JumpHeight/10
 	for i = 1, 10 do
 		Stepped.TickStep:Wait()
 		Mover.Position=Mover.Position:Lerp(Mover.Position+goal,i/10)
@@ -206,6 +207,7 @@ Stepped.TickStep:Connect(function(tdt,dt)
 		else
 			FC.Position+=lv+z
 		end
+		
 	end
 	if Hold.s then
 		if not Freecam then
@@ -294,6 +296,7 @@ Stepped.TickStep:Connect(function(tdt,dt)
 	PlayerFPS_Remote:Fire(dt)
 end)
 
+
 local function ComputeFall_velocity(Object, Mover_p, y_hit_level)
 	if Ground and not Jumping then
 		local Ground_Detect = (y_hit_level+Mover_p).Unit+(Object.Size/2)
@@ -312,7 +315,7 @@ end
 local function ComputePhysics(Object, Mover_p)
 	local Collision_data = Modules.Collision.new_block(Object, Mover)
 	local Sides = Collision_data:AllSides()
-	
+
 	ComputeFall_velocity(Object, Mover_p, y_hit_level)
 
 	--Come up with a formula to get MinN-MaxN sizes for magnitude and angles of the mover
@@ -374,7 +377,7 @@ Heartbeat.TickStep:Connect(function(tdt,dt)
 		end
 
 		if Prox then
-			ComputePhysics(Object, o_p)
+			ComputePhysics(Object, m_p)
 		end
 		if m_p.y<=workspace.FallenPartsDestroyHeight then
 			Reset()
