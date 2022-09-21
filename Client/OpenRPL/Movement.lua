@@ -1,6 +1,7 @@
 local Movement = {
-	Z = Vector3.zAxis/10,
-	Y = Vector3.yAxis
+	X = Vector3.xAxis/10,
+	Y = Vector3.yAxis,
+	Z = Vector3.zAxis/10
 }
 Movement.__index = Movement
 
@@ -30,14 +31,14 @@ function Movement:Right()
 	if self.Alt then
 		dir = self.Alt.CFrame.RightVector
 	end
-	self.Mover.Position+=dir+self.Z
+	self.Mover.Position+=dir+self.X
 end
 function Movement:Left()
 	local dir = self.Mover.CFrame.RightVector
 	if self.Alt then
 		dir = self.Alt.CFrame.RightVector
 	end
-	self.Mover.Position-=dir+self.Z
+	self.Mover.Position-=dir+self.X
 end
 function Movement:Up()
 	self.Mover.Position+=self.Y
