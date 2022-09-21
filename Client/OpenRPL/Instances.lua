@@ -6,6 +6,7 @@ local Mover = New('Part', workspace, {
     Name = "Mover",
     Size = Vector3.new(2,2,1),
     Position = Vector3.new(0,100,0),
+    Color = Color3.new(1,1,1),
     Anchored = true,
     CanCollide = false,
     Transparency = .1
