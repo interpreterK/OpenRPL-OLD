@@ -1,6 +1,5 @@
 local Modules = _G.__phys_modules__
-local Common = Modules.Common
-local New = Common.New
+local New = Modules.Shared.New
 
 local Mover = New('Part', workspace, {
     Name = "Mover",

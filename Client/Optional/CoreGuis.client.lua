@@ -8,8 +8,8 @@ if not Modules then
     Modules = _G.__phys_modules__
 end
 
-local Common = Modules.Common
-local S = Common.S
+local Shared = Modules.Shared
+local S = Shared.S
 local StarterGui = S.StarterGui
 
 StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.All, false)

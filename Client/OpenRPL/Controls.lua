@@ -2,8 +2,8 @@ local Controls = {}
 Controls.__index = Controls
 
 local Modules = _G.__phys_modules__
-local New     = Modules.Common.New
-local S       = Modules.Common.S
+local New     = Modules.Shared.New
+local S       = Modules.Shared.S
 local UIS     = S.UserInputService
 
 local IB, IE, IC;
@@ -20,7 +20,7 @@ local function new_Bind_System(self, KeyPressing_Remote, InputChanging_Remote)
 		local KeyName = input.KeyCode.Name:lower()
 		KeyPressing_Remote:Fire(KeyName, true, gameProcessed)
 
-		local Bind = self.Bindings.KeyDown[KeyName]
+		local Bind = self.KeyDown[KeyName]
 		if Bind and gameProcessed == Bind.gameProcessed then
 			Bind.Callback()
 		end
@@ -29,7 +29,7 @@ local function new_Bind_System(self, KeyPressing_Remote, InputChanging_Remote)
 		local KeyName = input.KeyCode.Name:lower()
 		KeyPressing_Remote:Fire(KeyName, false, gameProcessed)
 
-		local Bind = self.Bindings.KeyUp[KeyName]
+		local Bind = self.KeyUp[KeyName]
 		if Bind and gameProcessed == Bind.gameProcessed then
 			Bind.Callback()
 		end
@@ -41,32 +41,38 @@ end
 
 function Controls.new(Bind_array)
 	local self = {
-		Bindings = {
-			KeyDown = {},
-			KeyUp   = {}
-		}
+		KeyDown = {},
+		KeyUp   = {}
 	}
-	local KeyPressing_Remote   = New('BindableEvent')
+	local KeyPressing_Remote = New('BindableEvent')
 	local InputChanging_Remote = New('BindableEvent')
 
 	self.KeyPressing   = KeyPressing_Remote.Event
 	self.InputChanging = InputChanging_Remote.Event
 
 	for key, CFG in next, Bind_array.KeyDown do
-		if self.Bindings.KeyDown[key] then
+		if self.KeyDown[key] then
 			warn("\""..key.."\" Is already registered with KeyDown, overwriting.")
 		end
-		self.Bindings.KeyDown[key] = CFG
+		self.KeyDown[key] = CFG
 	end
 	for key, CFG in next, Bind_array.KeyUp do
-		if self.Bindings.KeyUp[key] then
+		if self.KeyUp[key] then
 			warn("\""..key.."\" Is already registered with KeyUp, overwriting.")
 		end
-		self.Bindings.KeyUp[key] = CFG
+		self.KeyUp[key] = CFG
 	end
 
 	new_Bind_System(self, KeyPressing_Remote, InputChanging_Remote)
+	self.InputBegan = IB
+	self.InputEnded = IE
+	self.InputChanged = IC
+
 	return setmetatable(self, Controls)
+end
+
+function Controls:RemoveBind(Key)
+	
 end
 
 function Controls:ForceAction(Key, isKeyDown)

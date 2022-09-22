@@ -81,10 +81,4 @@ Vars.Critical_wait = function(Parent, Name, Timeout, pt_MSG, gp_MSG, nil_MSG)
 	return i
 end
 
-function Vars.write(array)
-	for i,v in next, array do
-		Vars[i] = v
-	end
-end
-
 return Vars

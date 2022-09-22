@@ -1,11 +1,11 @@
-local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
-local Common = require(Shared:WaitForChild("Common"))
-local New = Common.New
+local OpenRPL = game:GetService("ReplicatedStorage"):WaitForChild("OpenRPL")
+local Shared = require(OpenRPL:WaitForChild("Shared"))
+local New = Shared.New
 
 local insert, remove, find = table.insert, table.remove, table.find
 local PhysicsList, IgnoredPhysicsList = {}, {}
 
-local PhysicsList_Invoke = New('RemoteFunction', Shared, {Name = 'PhysicsList'})
+local PhysicsList_Invoke = New('RemoteFunction', OpenRPL, {Name = 'PhysicsList'})
 PhysicsList_Invoke.OnServerInvoke = function(_)
 	return PhysicsList
 end

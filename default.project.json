@@ -14,8 +14,7 @@
     },
     
     "ReplicatedStorage": {
-      "Shared": {"$path": "Shared"},
-      "$path": "Scriptable"
+      "OpenRPL": {"$path": "Shared"}
     }
   }
 }

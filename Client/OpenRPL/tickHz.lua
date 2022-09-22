@@ -2,8 +2,8 @@ local tickHz = {}
 tickHz.__index = tickHz
 
 local Modules = _G.__phys_modules__
-local Common  = Modules.Common
-local S, New  = Common.S, Common.New
+local Shared  = Modules.Shared
+local S, New  = Shared.S, Shared.New
 
 local RunS = S.RunService
 

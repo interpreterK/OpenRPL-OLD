@@ -1,7 +1,7 @@
 --This module makes the engine scriptable and interactable with the client or server
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
-local Common = require(Shared:WaitForChild("Common"))
+local Shared = require(Shared:WaitForChild("Shared"))
 
 local Engine = {Objects = {}}
 Engine.__index = Engine
@@ -15,7 +15,7 @@ function Engine.__newindex(self,i,v)
     end
 end
 
-local S = Common.S
+local S = Shared.S
 local RunS = S.RunService
 
 local Properties = setmetatable({

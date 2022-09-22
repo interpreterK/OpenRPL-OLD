@@ -9,12 +9,12 @@ if not game:IsLoaded() then
 	game.Loaded:Wait()
 end
 
-local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local OpenRPL = game:GetService("ReplicatedStorage"):WaitForChild("OpenRPL")
 local Modules = {
-	Common    = require(Shared:WaitForChild("Common")),
+	Shared    = require(OpenRPL:WaitForChild("Shared")),
 	Collision = require(script:WaitForChild("Collision")),
-	Velocity  = require(script:WaitForChild("Velocity")),
-	Movement  = require(script:WaitForChild("Movement"))
+	Movement  = require(script:WaitForChild("Movement")),
+	Mouse     = require(script:WaitForChild("Mouse"))
 }
 _G.__phys_modules__ = setmetatable(Modules, {
 	__metatable = nil,
@@ -30,12 +30,12 @@ Modules.Instances = require(script:WaitForChild("Instances"))
 Modules.tickHz    = require(script:WaitForChild("tickHz"))
 Modules.Controls  = require(script:WaitForChild("Controls"))
 
-local S             = Modules.Common.S
-local thread        = Modules.Common.thread
-local Critical_wait = Modules.Common.Critical_wait
-local New           = Modules.Common.New
-local PhysicsFPS    = Modules.Common.PhysicsFPS
-local PlayerFPS     = Modules.Common.PlayerFPS
+local S             = Modules.Shared.S
+local thread        = Modules.Shared.thread
+local Critical_wait = Modules.Shared.Critical_wait
+local New           = Modules.Shared.New
+local PhysicsFPS    = Modules.Shared.PhysicsFPS
+local PlayerFPS     = Modules.Shared.PlayerFPS
 
 local Mover       = Modules.Instances.Mover
 local Freecam_Obj = Modules.Instances.Freecam
@@ -80,7 +80,7 @@ end)
 
 --Init the workspace physics
 --Critical dependency
-local PhysicsList_Remote = Critical_wait(Shared, 'PhysicsList', 10, "Fetching PhysicsList Remote...", "Got the PhysicsList Remote.", "Failed to fetch the PhysicsList, The physics engine will not work!")
+local PhysicsList_Remote = Critical_wait(OpenRPL, 'PhysicsList', 10, "Fetching PhysicsList Remote...", "Got the PhysicsList Remote.", "Failed to fetch the PhysicsList, The physics engine will not work!")
 local PhysicsList = {}
 --
 local HitColliders = {
@@ -142,6 +142,7 @@ local Bind_Map = {
 }
 local KeyHolding = {}
 local Controls = Modules.Controls.new(Bind_Map)
+local Mouse = Modules.Mouse.new(Mover, CurrentCamera)
 --
 
 local function NewBind_KeyDown(Key, Callback_Function)
@@ -193,11 +194,6 @@ Controls.InputChanging:Connect(function(input, gameProcessed)
 	end
 end)
 
-local function m_2D_3DVector() --This is NOT suppose to be mouse.Target or react's to physics *yet* -09/04
-	local SPTR = CurrentCamera:ScreenPointToRay(MouseHit_p.x,MouseHit_p.y,0)
-	return (SPTR.Origin+Mover.CFrame.LookVector+SPTR.Direction*(CurrentCamera.CFrame.p-Mover.CFrame.p).Magnitude*2)
-end
-
 local function ComputeJump()
 	local goal = V3(0,JumpHeight,0)/10
 	for i = 1, 10 do
@@ -242,7 +238,7 @@ Stepped.TickStep:Connect(function(tdt,dt)
 		end
 	end
 
-	local Dir = m_2D_3DVector()
+	local Dir = Mouse:PointRay(MouseHit_p)
 	local Mover_cf = Mover.CFrame
 	if not Freecam then
 		Pointer.Position=Mover_cf.p
