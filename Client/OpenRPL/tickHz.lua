@@ -12,8 +12,7 @@ local function CreateVM(Hz, Step_Func, STEP)
     local tdt     = 0
     local Connection;
     Hz = Hz or 60
-    if STEP then Hz=Hz/2 end
-
+    
     local function HzControl(dt,st)
         if Hz == 0 then
             Hz_Bind:Fire(tdt,dt,st)

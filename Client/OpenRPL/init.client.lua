@@ -40,9 +40,7 @@ local PlayerFPS     = Modules.Shared.PlayerFPS
 local Mover       = Modules.Instances.Mover
 local Freecam_Obj = Modules.Instances.Freecam
 local Pointer     = Modules.Instances.Pointer
-local debug_lookX = Modules.Instances.debug_lookX
-local debug_lookY = Modules.Instances.debug_lookY
-local debug_lookZ = Modules.Instances.debug_lookZ
+local debug_ball  = Modules.Instances.debug_ball
 
 local Players = S.Players
 
@@ -207,8 +205,15 @@ local function ComputeJump()
 end
 
 Stepped.TickStep:Connect(function(tdt,dt)
+	local Dir = Mouse:PointRay(MouseHit_p)
+	local Mover_cf = Mover.CFrame
 	if KeyHolding.w then
-		Movement:Forward()
+		if Ground then
+			Mover.CFrame=lookAt(Mover.Position,V3(Dir.x,0,Dir.z))
+			Movement:Forward(Dir)
+		else
+			Movement:Forward()
+		end
 	end
 	if KeyHolding.a then
 		Movement:Left()
@@ -238,8 +243,7 @@ Stepped.TickStep:Connect(function(tdt,dt)
 		end
 	end
 
-	local Dir = Mouse:PointRay(MouseHit_p)
-	local Mover_cf = Mover.CFrame
+
 	if not Freecam then
 		Pointer.Position=Mover_cf.p
 		Freecam_Obj.Position=Mover.Position
@@ -248,19 +252,10 @@ Stepped.TickStep:Connect(function(tdt,dt)
 		end
 	end
 	if Ground then
-		debug_lookX.Transparency = 0
-		debug_lookY.Transparency = 0
-		debug_lookZ.Transparency = 0
-
-
-
-		debug_lookX.CFrame=CN(Mover_cf.LookVector)*Mover_cf*ANG(pi/2,0,0)
-		debug_lookY.CFrame=CN(Mover_cf.LookVector)*Mover_cf*ANG(0,pi/2,0)
-		debug_lookZ.CFrame=CN(Mover_cf.LookVector)*Mover_cf*ANG(0,0,pi/2)
+		debug_ball.Transparency = 0
+		debug_ball.Position = Dir
 	else
-		debug_lookX.Transparency = 1
-		debug_lookY.Transparency = 1
-		debug_lookZ.Transparency = 1
+		debug_ball.Transparency = 1
 	end
 
 	PlayerFPS_Remote:Fire(dt)

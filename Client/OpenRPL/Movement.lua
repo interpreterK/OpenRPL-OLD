@@ -12,39 +12,45 @@ function Movement.new(Mover, Alt)
 	return setmetatable(self, Movement)
 end
 
-function Movement:Forward()
+function Movement:Forward(Offset)
+	Offset = Offset or Vector3.zero
 	local dir = self.Mover.CFrame.LookVector
 	if self.Alt then
 		dir = self.Alt.CFrame.LookVector
 	end
-	self.Mover.Position+=dir+self.Z
+	self.Mover.Position+=dir+self.Z+Offset
 end
-function Movement:Back()
+function Movement:Back(Offset)
+	Offset = Offset or Vector3.zero
 	local dir = self.Mover.CFrame.LookVector
 	if self.Alt then
 		dir = self.Alt.CFrame.LookVector
 	end
-	self.Mover.Position-=dir+self.Z
+	self.Mover.Position-=dir+self.Z+Offset
 end
-function Movement:Right()
+function Movement:Right(Offset)
+	Offset = Offset or Vector3.zero
 	local dir = self.Mover.CFrame.RightVector
 	if self.Alt then
 		dir = self.Alt.CFrame.RightVector
 	end
-	self.Mover.Position+=dir+self.X
+	self.Mover.Position+=dir+self.X+Offset
 end
-function Movement:Left()
+function Movement:Left(Offset)
+	Offset = Offset or Vector3.zero
 	local dir = self.Mover.CFrame.RightVector
 	if self.Alt then
 		dir = self.Alt.CFrame.RightVector
 	end
-	self.Mover.Position-=dir+self.X
+	self.Mover.Position-=dir+self.X+Offset
 end
-function Movement:Up()
-	self.Mover.Position+=self.Y
+function Movement:Up(Offset)
+	Offset = Offset or Vector3.zero
+	self.Mover.Position+=self.Y+Offset
 end
-function Movement:Down()
-	self.Mover.Position-=self.Y
+function Movement:Down(Offset)
+	Offset = Offset or Vector3.zero
+	self.Mover.Position-=self.Y+Offset
 end
 
 return Movement

@@ -23,33 +23,17 @@ local Pointer = New('Part', workspace, {
     CanCollide = false,
     Anchored = true
 })
-local debug_lookX = New('Part', workspace, {
-    Size = Vector3.new(.1,.7,.1),
-    Color = Color3.new(1,0,0),
-    CanCollide = false,
-    Anchored = true,
-    Transparency = 1
-})
-local debug_lookY = New('Part', workspace, {
-    Size = Vector3.new(.1,.7,.1),
-    Color = Color3.new(0,1,0),
-    CanCollide = false,
-    Anchored = true,
-    Transparency = 1
-})
-local debug_lookZ = New('Part', workspace, {
-    Size = Vector3.new(.1,.7,.1),
+local debug_ball = New('Part', workspace, {
+    Size = Vector3.new(.5,.5,.5),
     Color = Color3.new(0,0,1),
+    Shape = Enum.PartType.Ball,
     CanCollide = false,
-    Anchored = true,
-    Transparency = 1
+    Anchored = true
 })
 
 return {
     Mover       = Mover,
     Freecam     = Freecam,
     Pointer     = Pointer,
-    debug_lookX = debug_lookX,
-    debug_lookY = debug_lookY,
-    debug_lookZ = debug_lookZ
+    debug_ball  = debug_ball
 }
