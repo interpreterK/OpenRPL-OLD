@@ -14,21 +14,18 @@ local Modules = {
 	Shared    = require(OpenRPL:WaitForChild("Shared")),
 	Collision = require(script:WaitForChild("Collision")),
 	Movement  = require(script:WaitForChild("Movement")),
-	Mouse     = require(script:WaitForChild("Mouse"))
+	Mouse     = require(script:WaitForChild("Mouse")),
+	Instances = require(script:WaitForChild("Instances")),
+	tickHz    = require(script:WaitForChild("tickHz")),
+	Controls  = require(script:WaitForChild("Controls"))
 }
-_G.__phys_modules__ = setmetatable(Modules, {
-	__metatable = nil,
-	__index = function(self,i)
-		local fenv = getfenv(2)
-		if fenv.script and fenv.script:IsDescendantOf(script) then
-			return rawget(self,i)
+function _G.__phys_modules__(Module)
+	for i,m in next, Modules do
+		if Module == i then
+			return m
 		end
 	end
-})
---Any SCRIPT that utilizes _G.__phys_modules__ must NOT be pre-loaded into "Modules"
-Modules.Instances = require(script:WaitForChild("Instances"))
-Modules.tickHz    = require(script:WaitForChild("tickHz"))
-Modules.Controls  = require(script:WaitForChild("Controls"))
+end
 
 local S             = Modules.Shared.S
 local thread        = Modules.Shared.thread
@@ -164,6 +161,7 @@ end)
 
 NewBind_KeyDown('h', function()
 	Ground = not Ground
+	Movement = Modules.Movement.new(Mover, workspace.CurrentCamera)
 	Mover.Orientation = Vector3.zero
 	print('Ground=', Ground)
 end)
@@ -207,13 +205,9 @@ end
 Stepped.TickStep:Connect(function(tdt,dt)
 	local Dir = Mouse:PointRay(MouseHit_p)
 	local Mover_cf = Mover.CFrame
+	local ccf = CurrentCamera.CFrame
 	if KeyHolding.w then
-		if Ground then
-			Mover.CFrame=lookAt(Mover.Position,V3(Dir.x,0,Dir.z))
-			Movement:Forward(Dir)
-		else
-			Movement:Forward()
-		end
+		Movement:Forward()
 	end
 	if KeyHolding.a then
 		Movement:Left()
@@ -254,6 +248,7 @@ Stepped.TickStep:Connect(function(tdt,dt)
 	if Ground then
 		debug_ball.Transparency = 0
 		debug_ball.Position = Dir
+		Mover.CFrame=lookAt(Mover.Position,V3(ccf.Position.x,0,ccf.Position.z))
 	else
 		debug_ball.Transparency = 1
 	end

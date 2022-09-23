@@ -1,5 +1,5 @@
-local Modules = _G.__phys_modules__
-local New = Modules.Shared.New
+local include = _G.__phys_modules__
+local New = include'Shared'.New
 
 local Mover = New('Part', workspace, {
     Name = "Mover",
