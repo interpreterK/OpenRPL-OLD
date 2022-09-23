@@ -12,36 +12,39 @@ function Movement.new(Mover, Alt)
 	return setmetatable(self, Movement)
 end
 
-function Movement:Forward(Offset)
-	Offset = Offset or Vector3.zero
+local function Look(self)
 	local dir = self.Mover.CFrame.LookVector
 	if self.Alt then
 		dir = self.Alt.CFrame.LookVector
 	end
+	return dir
+end
+local function RightLook(self)
+	local dir = self.Mover.CFrame.RightVector
+	if self.Alt then
+		dir = self.Alt.CFrame.RightVector
+	end
+	return dir
+end
+
+function Movement:Forward(Offset)
+	Offset = Offset or Vector3.zero
+	local dir = Look(self)
 	self.Mover.Position+=dir+self.Z+Offset
 end
 function Movement:Back(Offset)
 	Offset = Offset or Vector3.zero
-	local dir = self.Mover.CFrame.LookVector
-	if self.Alt then
-		dir = self.Alt.CFrame.LookVector
-	end
+	local dir = Look(self)
 	self.Mover.Position-=dir+self.Z+Offset
 end
 function Movement:Right(Offset)
 	Offset = Offset or Vector3.zero
-	local dir = self.Mover.CFrame.RightVector
-	if self.Alt then
-		dir = self.Alt.CFrame.RightVector
-	end
+	local dir = RightLook(self)
 	self.Mover.Position+=dir+self.X+Offset
 end
 function Movement:Left(Offset)
 	Offset = Offset or Vector3.zero
-	local dir = self.Mover.CFrame.RightVector
-	if self.Alt then
-		dir = self.Alt.CFrame.RightVector
-	end
+	local dir = RightLook(self)
 	self.Mover.Position-=dir+self.X+Offset
 end
 function Movement:Up(Offset)

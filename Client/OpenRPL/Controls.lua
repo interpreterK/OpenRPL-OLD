@@ -1,9 +1,9 @@
 local Controls = {}
 Controls.__index = Controls
 
-local Modules = _G.__phys_modules__
-local New     = Modules.Shared.New
-local S       = Modules.Shared.S
+local include = _G.__phys_modules__
+local New     = include'Shared'.New
+local S       = include'Shared'.S
 local UIS     = S.UserInputService
 
 local IB, IE, IC;
