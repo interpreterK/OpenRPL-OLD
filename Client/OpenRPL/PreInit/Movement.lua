@@ -13,39 +13,33 @@ function Movement.new(Mover, Alt)
 end
 
 local function Look(self)
-	local dir = self.Mover.CFrame.LookVector
 	if self.Alt then
-		dir = self.Alt.CFrame.LookVector
+		return self.Alt.CFrame.LookVector
 	end
-	return dir
+	return self.Mover.CFrame.LookVector
 end
-local function RightLook(self)
-	local dir = self.Mover.CFrame.RightVector
+local function RightLook(self) 
 	if self.Alt then
-		dir = self.Alt.CFrame.RightVector
+		return self.Alt.CFrame.RightVector
 	end
-	return dir
+	return self.Mover.CFrame.RightVector
 end
 
 function Movement:Forward(Offset)
 	Offset = Offset or Vector3.zero
-	local dir = Look(self)
-	self.Mover.Position+=dir+self.Z+Offset
+	self.Mover.Position+=Look(self)+self.Z+Offset
 end
 function Movement:Back(Offset)
 	Offset = Offset or Vector3.zero
-	local dir = Look(self)
-	self.Mover.Position-=dir+self.Z+Offset
+	self.Mover.Position-=Look(self)+self.Z+Offset
 end
 function Movement:Right(Offset)
 	Offset = Offset or Vector3.zero
-	local dir = RightLook(self)
-	self.Mover.Position+=dir+self.X+Offset
+	self.Mover.Position+=RightLook(self)+self.X+Offset
 end
 function Movement:Left(Offset)
 	Offset = Offset or Vector3.zero
-	local dir = RightLook(self)
-	self.Mover.Position-=dir+self.X+Offset
+	self.Mover.Position-=RightLook(self)+self.X+Offset
 end
 function Movement:Up(Offset)
 	Offset = Offset or Vector3.zero

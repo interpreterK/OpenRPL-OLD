@@ -1,14 +1,14 @@
 --This is an optional script in the OpenRPL repository, you may remove this script if you want default ROBLOX GUI's (such as Chat and the Leaderboards).
 
-local Modules = _G.__phys_modules__
-if not Modules then
+local include = _G.__openrpl_modules__
+if not include then
     repeat
         task.wait()
-    until _G.__phys_modules__
-    Modules = _G.__phys_modules__
+    until _G.__openrpl_modules__
+    include = _G.__openrpl_modules__
 end
 
-local Shared = Modules.Shared
+local Shared = include'Shared'
 local S = Shared.S
 local StarterGui = S.StarterGui
 

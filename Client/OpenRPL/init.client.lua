@@ -9,21 +9,42 @@ if not game:IsLoaded() then
 	game.Loaded:Wait()
 end
 
+local Post_Init, Pre_Init = script:WaitForChild("PostInit"), script:WaitForChild("PreInit")
 local OpenRPL = game:GetService("ReplicatedStorage"):WaitForChild("OpenRPL")
 local Modules = {
-	Shared    = require(OpenRPL:WaitForChild("Shared")),
-	Collision = require(script:WaitForChild("Collision")),
-	Movement  = require(script:WaitForChild("Movement")),
-	Mouse     = require(script:WaitForChild("Mouse")),
-	Instances = require(script:WaitForChild("Instances")),
-	tickHz    = require(script:WaitForChild("tickHz")),
-	Controls  = require(script:WaitForChild("Controls"))
+	Shared = require(OpenRPL:WaitForChild("Shared"))
 }
-function _G.__phys_modules__(Module)
-	for i,m in next, Modules do
-		if Module == i then
-			return m
+local Pre_Init_C  = Pre_Init:GetChildren()
+local Post_Init_C = Post_Init:GetChildren()
+
+for i = 1, #Pre_Init_C do
+	local Src = Pre_Init_C[i]
+	if Src.ClassName == "ModuleScript" then
+		Modules[Src.Name] = require(Src)
+	else
+		Src:Destroy()
+	end
+end
+function _G.__openrpl_modules__(Module)
+	local fenv = getfenv(2)
+	if fenv.script and not fenv.script:IsDescendantOf(script) then
+		warn("[OpenRPL]: \"__openrpl_modules__\" should never be called outside the engine level. traces=",
+			debug.traceback(), '\n',
+			fenv.script:GetFullName(), '\n'
+		)
+	end
+	for Name, Required in next, Modules do
+		if Module == Name then
+			return Required
 		end
+	end
+end
+for i = 1, #Post_Init_C do
+	local Src = Post_Init_C[i]
+	if Src.ClassName == "ModuleScript" then
+		Modules[Src.Name] = require(Src)
+	else
+		Src:Destroy()
 	end
 end
 
@@ -135,7 +156,7 @@ local Bind_Map = {
 	},
 	KeyUp = {}
 }
-local KeyHolding = {}
+local KeyHolding = {}	
 local Controls = Modules.Controls.new(Bind_Map)
 local Mouse = Modules.Mouse.new(Mover, CurrentCamera)
 --

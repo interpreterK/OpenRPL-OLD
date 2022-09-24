@@ -1,8 +1,8 @@
 local tickHz = {}
 tickHz.__index = tickHz
 
-local Modules = _G.__phys_modules__
-local Shared  = Modules.Shared
+local include = _G.__openrpl_modules__
+local Shared  = include'Shared'
 local S, New  = Shared.S, Shared.New
 
 local RunS = S.RunService

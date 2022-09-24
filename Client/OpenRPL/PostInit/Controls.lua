@@ -1,7 +1,7 @@
 local Controls = {}
 Controls.__index = Controls
 
-local include = _G.__phys_modules__
+local include = _G.__openrpl_modules__
 local New     = include'Shared'.New
 local S       = include'Shared'.S
 local UIS     = S.UserInputService
