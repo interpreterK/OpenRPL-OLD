@@ -90,10 +90,10 @@ local function Hit_Detection_Back(Object, pos_i)
 end
 
 function Collision.new_block(Object, Mover)
-	return setmetatable({
-		Object = Object,
-		Mover = Mover
-	}, Collision)
+	local self = {}
+	self.Object = Object
+	self.Mover  = Mover
+	return setmetatable(self, Collision)
 end
 
 function Collision:Top()

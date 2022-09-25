@@ -99,12 +99,12 @@ end)
 local PhysicsList_Remote = Critical_wait(OpenRPL, 'PhysicsList', 10, "Fetching PhysicsList Remote...", "Got the PhysicsList Remote.", "Failed to fetch the PhysicsList, The physics engine will not work!")
 local PhysicsList = {}
 --
-local HitColliders = {
+local Hit_Matrix = {
 	x = {}, y = {}, z = {},
 	inv_x = {}, inv_y = {}, inv_z = {}
 }
 local function Visual_HitCollisions(Type, Obj, Color, Side, Ang)
-	HitColliders[Type][Obj] = New('Part', workspace, {
+	Hit_Matrix[Type][Obj] = New('Part', workspace, {
 		Name         = 'physics hit',
 		Anchored     = true,
 		Size         = V3(2,.1,2),
@@ -117,9 +117,9 @@ end
 local function HitCollisions_Visibility(value)
 	local tobool = value and (.5 or 1)
 	local FAT_table = {
-		unpack(HitColliders.x), unpack(HitColliders.inv_x),
-		unpack(HitColliders.y), unpack(HitColliders.inv_y),
-		unpack(HitColliders.z), unpack(HitColliders.inv_z)
+		unpack(Hit_Matrix.x), unpack(Hit_Matrix.inv_x),
+		unpack(Hit_Matrix.y), unpack(Hit_Matrix.inv_y),
+		unpack(Hit_Matrix.z), unpack(Hit_Matrix.inv_z)
 	}
 	
 	for i = 1, #FAT_table do
@@ -293,6 +293,10 @@ local function ComputeFall_velocity(Object, Mover_p, y_hit_level)
 	end
 end
 
+local Coordinate_Matrix = {
+	
+}
+
 local function ComputePhysics(Object, Mover_p)
 	local Collision_data = Modules.Collision.new_block(Object, Mover)
 	local Sides = Collision_data:AllSides()
@@ -321,23 +325,23 @@ local function ComputePhysics(Object, Mover_p)
 	end
 
 	if Hit_Indicators then
-		if HitColliders.inv_y[Object] then
-			HitColliders.inv_y[Object].Position = Sides.Bottom
+		if Hit_Matrix.inv_y[Object] then
+			Hit_Matrix.inv_y[Object].Position = Sides.Bottom
 		end
-		if HitColliders.y[Object] then
-			HitColliders.y[Object].Position = Sides.Top
+		if Hit_Matrix.y[Object] then
+			Hit_Matrix.y[Object].Position = Sides.Top
 		end
-		if HitColliders.x[Object] then
-			HitColliders.x[Object].Position = Sides.Left
+		if Hit_Matrix.x[Object] then
+			Hit_Matrix.x[Object].Position = Sides.Left
 		end
-		if HitColliders.inv_x[Object] then
-			HitColliders.inv_x[Object].Position = Sides.Right
+		if Hit_Matrix.inv_x[Object] then
+			Hit_Matrix.inv_x[Object].Position = Sides.Right
 		end
-		if HitColliders.z[Object] then
-			HitColliders.z[Object].Position = Sides.Front
+		if Hit_Matrix.z[Object] then
+			Hit_Matrix.z[Object].Position = Sides.Front
 		end
-		if HitColliders.inv_z[Object] then
-			HitColliders.inv_z[Object].Position = Sides.Back
+		if Hit_Matrix.inv_z[Object] then
+			Hit_Matrix.inv_z[Object].Position = Sides.Back
 		end
 	end
 end
