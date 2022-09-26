@@ -297,7 +297,9 @@ local Coordinate_Matrix = {
 	
 }
 
-local function ComputePhysics(Object, Mover_p)
+local function ComputePhysics(Object)
+	local Mover_p = Mover.Position
+
 	local Collision_data = Modules.Collision.new_block(Object, Mover)
 	local Sides = Collision_data:AllSides()
 
@@ -322,6 +324,10 @@ local function ComputePhysics(Object, Mover_p)
 	end
 	if (Mover_p-Sides.Back).Magnitude<=StudSteps then
 		Mover.Position=V3(Mover_p.x,Mover_p.y,Sides.Back.z-Mover.Size.z/2)
+	end
+
+	if m_p.y<=workspace.FallenPartsDestroyHeight then
+		Reset()
 	end
 
 	if Hit_Indicators then
@@ -352,21 +358,7 @@ Heartbeat.TickStep:Connect(function(tdt,dt)
 		PhysicsList = PhysicsList_Remote:InvokeServer()
 	end)
 	for i = 1, #PhysicsList do
-		local Object = PhysicsList[i]
-		local o_s, m_p = Object.Size, Mover.Position
-		--This still needs a proper system
-		local Prox = o_s.y/2<m_p.y/2 or o_s.x/-2<m_p.x/-2 or o_s.z/2<m_p.z/2
-
-		if Object.Name == "Baseplate" then
-			--print("Object=",o_s.y,"Mover=",m_p.y/2)
-		end
-
-		if Prox then
-			ComputePhysics(Object, m_p)
-		end
-		if m_p.y<=workspace.FallenPartsDestroyHeight then
-			Reset()
-		end
+		ComputePhysics(PhysicsList[i])
 	end
 	PhysicsFPS_Remote:Fire(dt)
 end)
