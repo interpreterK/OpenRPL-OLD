@@ -4,12 +4,14 @@ Collision.__index = Collision
 local abs, clamp = math.abs, math.clamp
 local V3, CN = Vector3.new, CFrame.new
 
-local function Hit_Detection_Top(Object, pos_i)
-	local Hit = Vector3.zero
+local function Hit_Detection_Top(self)
+	local Object = self.Object
+	local Inv_Pos = -self.Mover.Position
 	local p = Object.Position
+	local Hit = Vector3.zero
 	pcall(function()
 		local Top = Object.CFrame*CN(0,Object.Size.y/2,0)
-		local point = pos_i+Top.p
+		local point = Inv_Pos+Top.p
 		local abs_size_X = abs(Object.Size.x/2)
 		local abs_size_Z = abs(Object.Size.z/2)
 		local max_sX = clamp(-abs_size_X,-point.x,abs_size_X)
@@ -18,12 +20,14 @@ local function Hit_Detection_Top(Object, pos_i)
 	end)
 	return Hit
 end
-local function Hit_Detection_Bottom(Object, pos_i)
-	local Hit = Vector3.zero
+local function Hit_Detection_Bottom(self)
+	local Object = self.Object
+	local Inv_Pos = -self.Mover.Position
 	local p = Object.Position
+	local Hit = Vector3.zero
 	pcall(function()
 		local Bottom = Object.CFrame*CN(0,Object.Size.y/-2,0)
-		local point = pos_i+Bottom.p
+		local point = Inv_Pos+Bottom.p
 		local abs_size_X = abs(Object.Size.x/-2)
 		local abs_size_Z = abs(Object.Size.z/-2)
 		local max_sX = clamp(-abs_size_X,-point.x,abs_size_X)
@@ -32,12 +36,14 @@ local function Hit_Detection_Bottom(Object, pos_i)
 	end)
 	return Hit
 end
-local function Hit_Detection_Left(Object, pos_i)
-	local Hit = Vector3.zero
+local function Hit_Detection_Left(self)
+	local Object = self.Object
+	local Inv_Pos = -self.Mover.Position
 	local p = Object.Position
+	local Hit = Vector3.zero
 	pcall(function()
 		local Left = Object.CFrame*CN(Object.Size.x/-2,0,0)
-		local point = pos_i+Left.p
+		local point = Inv_Pos+Left.p
 		local abs_size_Y = abs(Object.Size.y/-2)
 		local abs_size_Z = abs(Object.Size.z/-2)
 		local max_sY = clamp(-abs_size_Y,-point.y,abs_size_Y)
@@ -46,12 +52,14 @@ local function Hit_Detection_Left(Object, pos_i)
 	end)
 	return Hit
 end
-local function Hit_Detection_Right(Object, pos_i)
-	local Hit = Vector3.zero
+local function Hit_Detection_Right(self)
+	local Object = self.Object
+	local Inv_Pos = -self.Mover.Position
 	local p = Object.Position
+	local Hit = Vector3.zero
 	pcall(function()
 		local Right = Object.CFrame*CN(Object.Size.x/2,0,0)
-		local point = pos_i+Right.p
+		local point = Inv_Pos+Right.p
 		local abs_size_Y = abs(Object.Size.y/2)
 		local abs_size_Z = abs(Object.Size.z/2)
 		local max_sY = clamp(-abs_size_Y,-point.y,abs_size_Y)
@@ -60,12 +68,14 @@ local function Hit_Detection_Right(Object, pos_i)
 	end)
 	return Hit
 end
-local function Hit_Detection_Front(Object, pos_i)
-	local Hit = Vector3.zero
+local function Hit_Detection_Front(self)
+	local Object = self.Object
+	local Inv_Pos = -self.Mover.Position
 	local p = Object.Position
+	local Hit = Vector3.zero
 	pcall(function()
 		local Front = Object.CFrame*CN(0,0,Object.Size.z/2)
-		local point = pos_i+Front.p
+		local point = Inv_Pos+Front.p
 		local abs_size_Y = abs(Object.Size.y/2)
 		local abs_size_X = abs(Object.Size.x/2)
 		local max_sY = clamp(-abs_size_Y,-point.y,abs_size_Y)
@@ -74,12 +84,14 @@ local function Hit_Detection_Front(Object, pos_i)
 	end)
 	return Hit
 end
-local function Hit_Detection_Back(Object, pos_i)
-	local Hit = Vector3.zero
+local function Hit_Detection_Back(self)
+	local Object = self.Object
+	local Inv_Pos = -self.Mover.Position
 	local p = Object.Position
+	local Hit = Vector3.zero
 	pcall(function()
 		local Back = Object.CFrame*CN(0,0,Object.Size.z/-2)
-		local point = pos_i+Back.p
+		local point = Inv_Pos+Back.p
 		local abs_size_Y = abs(Object.Size.y/-2)
 		local abs_size_X = abs(Object.Size.x/-2)
 		local max_sY = clamp(-abs_size_Y,-point.y,abs_size_Y)
@@ -97,22 +109,22 @@ function Collision.new_block(Object, Mover)
 end
 
 function Collision:Top()
-	return Hit_Detection_Top(self.Object, -self.Mover.Position)
+	return Hit_Detection_Top(self)
 end
 function Collision:Bottom()
-	return Hit_Detection_Bottom(self.Object, -self.Mover.Position)
+	return Hit_Detection_Bottom(self)
 end
 function Collision:Left()
-	return Hit_Detection_Left(self.Object, -self.Mover.Position)
+	return Hit_Detection_Left(self)
 end
 function Collision:Right()
-	return Hit_Detection_Right(self.Object, -self.Mover.Position)
+	return Hit_Detection_Right(self)
 end
 function Collision:Front()
-	return Hit_Detection_Front(self.Object, -self.Mover.Position)
+	return Hit_Detection_Front(self)
 end
 function Collision:Back()
-	return Hit_Detection_Back(self.Object, -self.Mover.Position)
+	return Hit_Detection_Back(self)
 end
 
 function Collision:AllSides()
