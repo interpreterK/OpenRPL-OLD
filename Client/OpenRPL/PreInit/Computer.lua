@@ -10,11 +10,11 @@ local Velocity = 0
 
 function Computer.new(Mover, Properties)
 	local self = {}
-	self.Mover         = Mover
-	self.Gravity       = Properties.Gravity or Defaults.Gravity
-	self.Fall_Gain     = Properties.Fall_Gain or Defaults.Fall_Gain
-	self.OnGround      = false
-	self.Jumping       = false
+	self.Mover     = Mover
+	self.Gravity   = Properties.Gravity or Defaults.Gravity
+	self.Fall_Gain = Properties.Fall_Gain or Defaults.Fall_Gain
+	self.OnGround  = false
+	self.Jumping   = false
 	return setmetatable(self, Computer)
 end
 
