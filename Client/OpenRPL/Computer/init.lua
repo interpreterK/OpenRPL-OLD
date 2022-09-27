@@ -26,7 +26,7 @@ function Computer:Jump(Ground_Level)
 	if self.OnGround and not self.Jumping then
 		local Mover_p = self.Mover.Position
 		
-		local Ground = (Ground_Level+Mover_p).Unit+()
+		local Ground = (Ground_Level+Mover_p).Unit
 	end
 end
 

@@ -1,9 +1,9 @@
 local tickHz = {}
 tickHz.__index = tickHz
 
-local include = _G.__openrpl_modules__
-local Shared  = include'Shared'
-local S, New  = Shared.S, Shared.New
+local Components = require(script.Parent)
+local Shared     = Components.Shared
+local S, New     = Shared.S, Shared.New
 
 local RunS = S.RunService
 

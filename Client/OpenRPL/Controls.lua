@@ -1,9 +1,11 @@
 local Controls = {}
 Controls.__index = Controls
 
-local include = _G.__openrpl_modules__
-local New     = include'Shared'.New
-local S       = include'Shared'.S
+local Components = require(script.Parent)
+local Shared     = Components.Shared
+
+local New     = Shared.New
+local S       = Shared.S
 local UIS     = S.UserInputService
 
 local IB, IE, IC;

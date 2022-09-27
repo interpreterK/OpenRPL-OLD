@@ -9,18 +9,18 @@ if not game:IsLoaded() then
 	game.Loaded:Wait()
 end
 
-local Modules       = require(script:WaitForChild("Components"))
-local S             = Modules.Shared.S
-local thread        = Modules.Shared.thread
-local Critical_wait = Modules.Shared.Critical_wait
-local New           = Modules.Shared.New
-local PhysicsFPS    = Modules.Shared.PhysicsFPS
-local PlayerFPS     = Modules.Shared.PlayerFPS
+local Components    = require(script:WaitForChild("Components"))
+local S             = Components.Shared.S
+local thread        = Components.Shared.thread
+local Critical_wait = Components.Shared.Critical_wait
+local New           = Components.Shared.New
+local PhysicsFPS    = Components.Shared.PhysicsFPS
+local PlayerFPS     = Components.Shared.PlayerFPS
 
-local Mover       = Modules.Instances.Mover
-local Freecam_Obj = Modules.Instances.Freecam
-local Pointer     = Modules.Instances.Pointer
-local debug_ball  = Modules.Instances.debug_ball
+local Mover       = Components.Instances.Mover
+local Freecam_Obj = Components.Instances.Freecam
+local Pointer     = Components.Instances.Pointer
+local debug_ball  = Components.Instances.debug_ball
 
 local Players = S.Players
 
@@ -29,7 +29,7 @@ local pi = math.pi
 local Freecam = false
 local Ground  = false
 
-local LocalPlayer = Players.LocalPlayer or Players.PlayerAdded:Wait()
+local LocalPlayer       = Players.LocalPlayer or Players.PlayerAdded:Wait()
 local Default_Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
 
 local CurrentCamera = workspace.CurrentCamera
@@ -58,7 +58,7 @@ end)
 
 --Init the workspace physics
 --Critical dependency
-local PhysicsList_Remote = Critical_wait(OpenRPL, 'PhysicsList', 10, "Fetching PhysicsList Remote...", "Got the PhysicsList Remote.", "Failed to fetch the PhysicsList, The physics engine will not work!")
+local PhysicsList_Remote = Critical_wait(Components.Dependency.OpenRPL, 'PhysicsList', 10, "Fetching PhysicsList Remote...", "Got the PhysicsList Remote.", "Failed to fetch the PhysicsList, The physics engine will not work!")
 local PhysicsList = {}
 --
 local Hit_Matrix = {
@@ -101,11 +101,11 @@ local Fall_velocity_max   = 5
 local MouseHit_p          = Vector3.zero
 
 --Init custom classes
-local Movement = Modules.Movement.new(Mover)
+local Movement = Components.Movement.new(Mover)
 --Step info
 --https://devforum-uploads.s3.dualstack.us-east-2.amazonaws.com/uploads/original/4X/0/b/6/0b6fde38a15dd528063a92ac8916ce3cd84fc1ce.png
-local Heartbeat = Modules.tickHz.new(0, "Heartbeat")
-local Stepped = Modules.tickHz.new(60, "Stepped")
+local Heartbeat = Components.tickHz.new(0, "Heartbeat")
+local Stepped = Components.tickHz.new(60, "Stepped")
 --Controls
 local Bind_Map = {
 	KeyDown = {
@@ -119,8 +119,8 @@ local Bind_Map = {
 	KeyUp = {}
 }
 local KeyHolding = {}	
-local Controls = Modules.Controls.new(Bind_Map)
-local Mouse = Modules.Mouse.new(Mover, CurrentCamera)
+local Controls = Components.Controls.new(Bind_Map)
+local Mouse = Components.Mouse.new(Mover, CurrentCamera)
 --
 
 local function NewBind_KeyDown(Key, Callback_Function)
@@ -133,10 +133,10 @@ end
 NewBind_KeyDown('f', function()
 	Freecam = not Freecam
 	if Freecam then
-		Movement = Modules.Movement.new(Freecam_Obj, workspace.CurrentCamera)
+		Movement = Components.Movement.new(Freecam_Obj, workspace.CurrentCamera)
 		Camera_POV(workspace.CurrentCamera, Freecam_Obj)
 	else
-		Movement = Modules.Movement.new(Mover)
+		Movement = Components.Movement.new(Mover)
 		Camera_POV(workspace.CurrentCamera, Mover)
 	end
 	print('Freecam=', Freecam)
@@ -144,7 +144,7 @@ end)
 
 NewBind_KeyDown('h', function()
 	Ground = not Ground
-	Movement = Modules.Movement.new(Mover, workspace.CurrentCamera)
+	Movement = Components.Movement.new(Mover, workspace.CurrentCamera)
 	Mover.Orientation = Vector3.zero
 	print('Ground=', Ground)
 end)
@@ -262,7 +262,7 @@ local Coordinate_Matrix = {
 local function ComputePhysics(Object)
 	local Mover_p = Mover.Position
 
-	local Collision_data = Modules.Collision.new_block(Object, Mover)
+	local Collision_data = Components.Collision.new_block(Object, Mover)
 	local Sides = Collision_data:AllSides()
 
 	ComputeFall_velocity(Object, Mover_p, Sides.Top)

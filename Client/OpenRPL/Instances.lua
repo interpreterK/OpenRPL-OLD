@@ -1,5 +1,5 @@
-local include = _G.__openrpl_modules__
-local New = include'Shared'.New
+local Modules = require(script.Parent)
+local New     = Modules.Shared.New
 
 local Mover = New('Part', workspace, {
     Name = "Mover",
