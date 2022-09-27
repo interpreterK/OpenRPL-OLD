@@ -19,7 +19,7 @@ function Computer.new(Mover, Properties)
 end
 
 function Computer:CalculateGeometry(Object)
-
+	
 end
 
 function Computer:Jump(Ground_Level)
