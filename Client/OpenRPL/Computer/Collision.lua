@@ -101,7 +101,7 @@ local function Hit_Detection_Back(self)
 	return Hit
 end
 
-function Collision.new_block(Object, Mover)
+function Collision.new(Object, Mover)
 	local self = {}
 	self.Object = Object
 	self.Mover  = Mover

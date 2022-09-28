@@ -72,9 +72,6 @@ local JumpHeight          = 20
 local Jumping             = false
 local StudSteps           = 1 --Never recommend below 1 or else the hit detection will/can be to perfect
 local MaxGround_Detect    = 100
-local Fall_velocity       = 1e-3
-local Fall_velocity_level = 0
-local Fall_velocity_max   = 5
 local MouseHit_p          = Vector3.zero
 
 local LocalPlayer       = Players.LocalPlayer or Players.PlayerAdded:Wait()
@@ -103,10 +100,13 @@ LocalPlayer.CharacterAdded:Connect(function(character)
 	NoCharacter(Mover, character)
 end)
 
---Init the workspace physics
---Critical dependency
 local PhysicsList = {}
---
+local PhysicsProperties = {
+	Gravity = 195,
+	Fall_Gain = 1e-3,
+	JumpHeight = 20
+}
+
 local Hit_Matrix = {
 	x = {}, y = {}, z = {},
 	inv_x = {}, inv_y = {}, inv_z = {}
@@ -135,8 +135,8 @@ local function HitCollisions_Visibility(value)
 	end
 end
 
-
 --Init custom classes
+
 local Movement = Movement.new(Mover)
 --Step info
 --https://devforum-uploads.s3.dualstack.us-east-2.amazonaws.com/uploads/original/4X/0/b/6/0b6fde38a15dd528063a92ac8916ce3cd84fc1ce.png
@@ -256,7 +256,6 @@ Stepped.TickStep:Connect(function(tdt,dt)
 		end
 	end
 
-
 	if not Freecam then
 		Pointer.Position=Mover_cf.p
 		Freecam_Obj.Position=Mover.Position
@@ -276,87 +275,14 @@ Stepped.TickStep:Connect(function(tdt,dt)
 end)
 
 
-local function ComputeFall_velocity(Object, Mover_p, y_hit_level)
-	if Ground and not Jumping then
-		local Ground_Detect = (y_hit_level+Mover_p).Unit+(Object.Size/2)
-		local Ground_Unit = -((Ground_Detect-Mover_p).Unit.y*(Ground_Detect+Mover_p).Magnitude)
-		if Ground_Unit>=StudSteps then
-			OnGround = false
-			Mover.Position-=V3(0,.1+Fall_velocity_level,0)
-			Fall_velocity_level+=Fall_velocity
-		else
-			OnGround = true
-			Fall_velocity_level=0
-		end
-	end
-end
-
-local Coordinate_Matrix = {
-	
-}
-
-local function ComputePhysics(Object)
-	local Mover_p = Mover.Position
-
-	local Collision_data = Components.Collision.new_block(Object, Mover)
-	local Sides = Collision_data:AllSides()
-
-	ComputeFall_velocity(Object, Mover_p, Sides.Top)
-
-	--Come up with a formula to get MinN-MaxN sizes for magnitude and angles of the mover
-	if (Mover_p-Sides.Top).Magnitude<=StudSteps then
-		Mover.Position=V3(Mover_p.x,Sides.Top.y+Mover.Size.y/2,Mover_p.z)
-	end
-	if (Mover_p-Sides.Left).Magnitude<=StudSteps then
-		Mover.Position=V3(Sides.Left.x+Mover.Size.x/-2,Mover_p.y,Mover.Position.z)
-	end
-	if (Mover_p-Sides.Front).Magnitude<=StudSteps then
-		Mover.Position=V3(Mover_p.x,Mover_p.y,Sides.Front.z+Mover.Size.z/2)
-	end
-	
-	if (Mover_p-Sides.Bottom).Magnitude<=StudSteps then
-		Mover.Position=V3(Mover_p.x,Sides.Bottom.y-Mover.Size.y/2,Mover_p.z)
-	end
-	if (Mover_p-Sides.Right).Magnitude<=StudSteps then
-		Mover.Position=V3(Sides.Right.x-Mover.Size.x/-2,Mover_p.y,Mover_p.z)
-	end
-	if (Mover_p-Sides.Back).Magnitude<=StudSteps then
-		Mover.Position=V3(Mover_p.x,Mover_p.y,Sides.Back.z-Mover.Size.z/2)
-	end
-
-	if m_p.y<=workspace.FallenPartsDestroyHeight then
-		Reset()
-	end
-
-	if Hit_Indicators then
-		if Hit_Matrix.inv_y[Object] then
-			Hit_Matrix.inv_y[Object].Position = Sides.Bottom
-		end
-		if Hit_Matrix.y[Object] then
-			Hit_Matrix.y[Object].Position = Sides.Top
-		end
-		if Hit_Matrix.x[Object] then
-			Hit_Matrix.x[Object].Position = Sides.Left
-		end
-		if Hit_Matrix.inv_x[Object] then
-			Hit_Matrix.inv_x[Object].Position = Sides.Right
-		end
-		if Hit_Matrix.z[Object] then
-			Hit_Matrix.z[Object].Position = Sides.Front
-		end
-		if Hit_Matrix.inv_z[Object] then
-			Hit_Matrix.inv_z[Object].Position = Sides.Back
-		end
-	end
-end
-
 Heartbeat.TickStep:Connect(function(tdt,dt)
 	thread(function()
 		--Grab the physics info after a physics step
 		PhysicsList = PhysicsList_Remote:InvokeServer()
 	end)
 	for i = 1, #PhysicsList do
-		ComputePhysics(PhysicsList[i])
+		Computer.PhysicsObject = PhysicsList[i]
+		Computer:Physics()
 	end
 	PhysicsFPS_Remote:Fire(dt)
 end)
