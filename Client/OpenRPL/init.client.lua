@@ -9,34 +9,81 @@ if not game:IsLoaded() then
 	game.Loaded:Wait()
 end
 
-local Components    = require(script:WaitForChild("Components"))
-local S             = Components.Shared.S
-local thread        = Components.Shared.thread
-local Critical_wait = Components.Shared.Critical_wait
-local New           = Components.Shared.New
-local PhysicsFPS    = Components.Shared.PhysicsFPS
-local PlayerFPS     = Components.Shared.PlayerFPS
-
-local Mover       = Components.Instances.Mover
-local Freecam_Obj = Components.Instances.Freecam
-local Pointer     = Components.Instances.Pointer
-local debug_ball  = Components.Instances.debug_ball
+local S = setmetatable({}, {
+	__index = function(self,i)
+		if not rawget(self,i) then
+			self[i] = game:GetService(i)
+		end
+		return rawget(self,i)
+	end
+})
 
 local Players = S.Players
+local Storage = S.ReplicatedStorage
+
+--Wait for all the require dependencies
+local Modules = {'Controls','Instances','Mouse','Movement','tickHz','Computer'}
+for i = 1, #Modules do
+	script:WaitForChild(Modules[i])
+end 
+local OpenRPL_Directory  = Storage:WaitForChild("OpenRPL")
+local PhysicsList_Remote = OpenRPL_Directory:WaitForChild("PhysicsList")
+
+--Import the required dependencies
+local Instances = require(script.Instances)
+local Controls  = require(script.Controls)
+local tickHz    = require(script.tickHz)
+local Movement  = require(script.Movement)
+local Mouse     = require(script.Mouse)
+local Computer  = require(script.Computer)
+
+local function thread(f)
+	local new_thread = coroutine.wrap(f)
+	local bool, error = pcall(new_thread)
+	if not bool then
+		warn(error, debug.traceback())
+	end
+end
+
+local function New(Inst, Parent, Props)
+	local i = Instance.new(Inst)
+	for prop, value in next, Props or {} do
+		pcall(function()
+			i[prop] = value
+		end)
+	end
+	i.Parent = Parent
+	return i
+end
+
+local Mover       = Instances.Mover
+local Freecam_Obj = Instances.Freecam
+local Pointer     = Instances.Pointer
+local debug_ball  = Instances.debug_ball
 
 local V3, CN, ANG, lookAt = Vector3.new, CFrame.new, CFrame.Angles, CFrame.lookAt
 local pi = math.pi
-local Freecam = false
-local Ground  = false
+
+local Freecam             = false
+local Ground              = false
+local OnGround            = false
+local Hit_Indicators      = true
+local JumpHeight          = 20
+local Jumping             = false
+local StudSteps           = 1 --Never recommend below 1 or else the hit detection will/can be to perfect
+local MaxGround_Detect    = 100
+local Fall_velocity       = 1e-3
+local Fall_velocity_level = 0
+local Fall_velocity_max   = 5
+local MouseHit_p          = Vector3.zero
 
 local LocalPlayer       = Players.LocalPlayer or Players.PlayerAdded:Wait()
 local Default_Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
 
+local PhysicsFPS_Remote  = New('BindableEvent', OpenRPL_Directory, {Name = "PhysicsFPS"})
+local PlayerFPS_Remote   = New('BindableEvent', OpenRPL_Directory, {Name = "PlayerFPS"})
+
 local CurrentCamera = workspace.CurrentCamera
-
-local PhysicsFPS_Remote = PhysicsFPS()
-local PlayerFPS_Remote = PlayerFPS()
-
 local function Camera_POV(CurrentCamera, Subject)
 	CurrentCamera.CameraSubject = Subject
 	CurrentCamera.CameraType = Enum.CameraType.Custom
@@ -58,7 +105,6 @@ end)
 
 --Init the workspace physics
 --Critical dependency
-local PhysicsList_Remote = Critical_wait(Components.Dependency.OpenRPL, 'PhysicsList', 10, "Fetching PhysicsList Remote...", "Got the PhysicsList Remote.", "Failed to fetch the PhysicsList, The physics engine will not work!")
 local PhysicsList = {}
 --
 local Hit_Matrix = {
@@ -89,23 +135,13 @@ local function HitCollisions_Visibility(value)
 	end
 end
 
-local OnGround            = false
-local Hit_Indicators      = true
-local JumpHeight          = 20
-local Jumping             = false
-local StudSteps           = 1 --Never recommend below 1 or else the hit detection will/can be to perfect
-local MaxGround_Detect    = 100
-local Fall_velocity       = 1e-3
-local Fall_velocity_level = 0
-local Fall_velocity_max   = 5
-local MouseHit_p          = Vector3.zero
 
 --Init custom classes
-local Movement = Components.Movement.new(Mover)
+local Movement = Movement.new(Mover)
 --Step info
 --https://devforum-uploads.s3.dualstack.us-east-2.amazonaws.com/uploads/original/4X/0/b/6/0b6fde38a15dd528063a92ac8916ce3cd84fc1ce.png
-local Heartbeat = Components.tickHz.new(0, "Heartbeat")
-local Stepped = Components.tickHz.new(60, "Stepped")
+local Heartbeat = tickHz.new(0, "Heartbeat")
+local Stepped = tickHz.new(60, "Stepped")
 --Controls
 local Bind_Map = {
 	KeyDown = {
@@ -118,9 +154,9 @@ local Bind_Map = {
 	},
 	KeyUp = {}
 }
-local KeyHolding = {}	
-local Controls = Components.Controls.new(Bind_Map)
-local Mouse = Components.Mouse.new(Mover, CurrentCamera)
+local KeyHolding = {}
+local Controls = Controls.new(Bind_Map)
+local Mouse = Mouse.new(Mover, CurrentCamera)
 --
 
 local function NewBind_KeyDown(Key, Callback_Function)
@@ -133,10 +169,10 @@ end
 NewBind_KeyDown('f', function()
 	Freecam = not Freecam
 	if Freecam then
-		Movement = Components.Movement.new(Freecam_Obj, workspace.CurrentCamera)
+		Movement = Movement.new(Freecam_Obj, workspace.CurrentCamera)
 		Camera_POV(workspace.CurrentCamera, Freecam_Obj)
 	else
-		Movement = Components.Movement.new(Mover)
+		Movement = Movement.new(Mover)
 		Camera_POV(workspace.CurrentCamera, Mover)
 	end
 	print('Freecam=', Freecam)
@@ -144,7 +180,7 @@ end)
 
 NewBind_KeyDown('h', function()
 	Ground = not Ground
-	Movement = Components.Movement.new(Mover, workspace.CurrentCamera)
+	Movement = Movement.new(Mover, workspace.CurrentCamera)
 	Mover.Orientation = Vector3.zero
 	print('Ground=', Ground)
 end)

@@ -1,9 +1,7 @@
 local Controls = {}
 Controls.__index = Controls
 
-local Components = require(script.Parent)
-local Shared     = Components.Shared
-
+local Shared  = require(script.Parent.Shared)
 local New     = Shared.New
 local S       = Shared.S
 local UIS     = S.UserInputService
